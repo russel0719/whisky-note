@@ -1,0 +1,97 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { parseOptionalNumber, parseOptionalText, parseWhiskyFields } from '@/lib/parse';
+
+export interface FormState {
+  error?: string;
+}
+
+function parseScore(value: FormDataEntryValue | null): number | null | 'invalid' {
+  const n = parseOptionalNumber(value);
+  if (n == null) return null;
+  if (n < 0 || n > 100) return 'invalid';
+  return Math.round(n);
+}
+
+export async function createTasting(_prev: FormState, formData: FormData): Promise<FormState> {
+  const supabase = await createClient();
+
+  let whiskyId = String(formData.get('whisky_id') ?? '');
+  if (!whiskyId) return { error: '위스키를 선택해주세요.' };
+
+  // "새 위스키" 선택 시 즉석 등록
+  if (whiskyId === '__new__') {
+    const parsed = parseWhiskyFields(formData, 'new_');
+    if ('error' in parsed) return { error: parsed.error };
+    const { data, error } = await supabase
+      .from('whiskies')
+      .insert(parsed.fields)
+      .select('id')
+      .single();
+    if (error) return { error: `위스키 등록에 실패했습니다: ${error.message}` };
+    whiskyId = data.id;
+  }
+
+  const scores = {
+    nose_score: parseScore(formData.get('nose_score')),
+    palate_score: parseScore(formData.get('palate_score')),
+    finish_score: parseScore(formData.get('finish_score')),
+    overall_score: parseScore(formData.get('overall_score')),
+  };
+  if (Object.values(scores).includes('invalid')) {
+    return { error: '점수는 0에서 100 사이여야 합니다.' };
+  }
+
+  const tastedAt = String(formData.get('tasted_at') ?? '').trim();
+  if (!tastedAt) return { error: '시음일을 입력해주세요.' };
+
+  const buyAgain = String(formData.get('would_buy_again') ?? '');
+
+  const { data: tasting, error } = await supabase
+    .from('tastings')
+    .insert({
+      whisky_id: whiskyId,
+      bottle_id: parseOptionalText(formData.get('bottle_id')),
+      tasted_at: tastedAt,
+      location: parseOptionalText(formData.get('location')),
+      ...(scores as Record<string, number | null>),
+      nose_note: parseOptionalText(formData.get('nose_note')),
+      palate_note: parseOptionalText(formData.get('palate_note')),
+      finish_note: parseOptionalText(formData.get('finish_note')),
+      comment: parseOptionalText(formData.get('comment')),
+      pairing: parseOptionalText(formData.get('pairing')),
+      would_buy_again: ['yes', 'no', 'maybe'].includes(buyAgain) ? buyAgain : null,
+      price_paid: parseOptionalNumber(formData.get('price_paid')),
+    })
+    .select('id')
+    .single();
+  if (error) return { error: `저장에 실패했습니다: ${error.message}` };
+
+  const tagIds = formData
+    .getAll('aroma_tags')
+    .map((v) => Number(v))
+    .filter((n) => Number.isInteger(n));
+  if (tagIds.length > 0) {
+    const { error: tagError } = await supabase
+      .from('tasting_aromas')
+      .insert(tagIds.map((tagId) => ({ tasting_id: tasting.id, tag_id: tagId })));
+    if (tagError) return { error: `아로마 태그 저장에 실패했습니다: ${tagError.message}` };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/tastings');
+  redirect(`/tastings/${tasting.id}`);
+}
+
+export async function deleteTasting(formData: FormData): Promise<void> {
+  const id = String(formData.get('id') ?? '');
+  if (!id) return;
+  const supabase = await createClient();
+  await supabase.from('tastings').delete().eq('id', id);
+  revalidatePath('/');
+  revalidatePath('/tastings');
+  redirect('/tastings');
+}

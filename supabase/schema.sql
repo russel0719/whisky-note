@@ -1,0 +1,15 @@
+-- Whisky Note 스키마의 소스는 supabase/migrations/ 아래의 마이그레이션 파일이다.
+-- 이 파일은 직접 적용하지 않는다. 스키마 변경은 항상 새 마이그레이션으로 추가할 것.
+--
+--   supabase migration new <name>
+--   supabase db push
+--
+-- 현재 테이블 개요 (whisky_note 스키마):
+--   whiskies        위스키 마스터 (이름/증류소/분류/지역/도수/숙성/캐스크)
+--   bottles         구매 기록 (구매일/가격/용량/개봉일/잔량/상태)
+--   tastings        시음 노트 (N/P/F/총점 100점제, 노트, 장소, 페어링, 재구매 의사)
+--   aroma_tags      아로마 휠 태그 마스터 (공용, 읽기 전용)
+--   tasting_aromas  시음 ↔ 아로마 태그 M:N
+--
+-- 적용 후 수동 단계: Supabase 대시보드 > Settings > API > Exposed schemas 에
+-- whisky_note 를 추가해야 PostgREST로 접근 가능하다.

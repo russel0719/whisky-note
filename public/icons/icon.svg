@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#1a1714"/>
+  <g>
+    <!-- 위스키 액체 -->
+    <path d="M191 240 C199 274 212 294 226 312 C234 322 238 332 239 344 L273 344 C274 332 278 322 286 312 C300 294 313 274 321 240 Z" fill="#c9963f"/>
+    <!-- 글렌캐런 볼 -->
+    <path d="M178 128 C178 218 202 262 224 292 C236 308 240 322 240 344 L272 344 C272 322 276 308 288 292 C310 262 334 218 334 128 Z" fill="none" stroke="#e3b563" stroke-width="15" stroke-linejoin="round"/>
+    <!-- 스템 -->
+    <rect x="244" y="350" width="24" height="22" fill="#e3b563"/>
+    <!-- 받침 -->
+    <rect x="198" y="370" width="116" height="15" rx="7.5" fill="#e3b563"/>
+  </g>
+</svg>

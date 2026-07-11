@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* Whisky Note 디자인 토큰.
+   구조(타이포 래더, 스페이싱, pill=액션 문법, 타일 리듬)는 ~/.claude/design.md를 따르고,
+   컬러만 다크+앰버 위스키 무드로 편차를 둔다.
+   편차 상세: ~/.claude/docs/projects/whisky-note.md "디자인 가이드라인" 참고. */
+@theme {
+  /* Surface */
+  --color-canvas: #1a1714;
+  --color-tile-1: #211d19;
+  --color-tile-2: #171310;
+  --color-nav: #0f0d0b;
+
+  /* Accent — 모든 인터랙티브 요소는 이 단일 액센트만 사용 */
+  --color-accent: #c9963f;
+  --color-accent-bright: #e3b563;
+  --color-on-accent: #1a1714;
+
+  /* Text */
+  --color-ink: #f4efe8;
+  --color-muted: #a89e91;
+  --color-faint: #6b6257;
+
+  /* Hairline */
+  --color-hairline: rgba(244, 239, 232, 0.12);
+  --color-hairline-soft: rgba(244, 239, 232, 0.06);
+
+  /* Status */
+  --color-danger: #c96a4f;
+
+  --font-sans: "Pretendard Variable", Pretendard, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --radius-card: 18px;
+  --radius-utility: 8px;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--color-canvas);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+button,
+a {
+  transition: transform 0.12s ease, opacity 0.15s ease;
+}
+
+button:active,
+a:active {
+  transform: scale(0.95);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-bright);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+input[type="range"] {
+  accent-color: var(--color-accent);
+}
