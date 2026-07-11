@@ -28,6 +28,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# supabase CLI 내부 상태 (link 시 생성)
+/supabase/.temp/
+
 # serwist (빌드 시 생성)
 /public/sw.js
 /public/sw.js.map
