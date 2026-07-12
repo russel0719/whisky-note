@@ -15,7 +15,16 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
+  if (error) {
+    if (error.code === 'invalid_credentials')
+      return { error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
+    if (error.code === 'email_not_confirmed')
+      return {
+        error:
+          '이메일 인증이 완료되지 않은 계정입니다. Supabase에서 이메일 확인을 껐다면 이 계정을 삭제하고 다시 가입해주세요.',
+      };
+    return { error: `로그인에 실패했습니다: ${error.message}` };
+  }
 
   redirect('/');
 }
