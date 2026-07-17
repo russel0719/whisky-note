@@ -2,14 +2,13 @@
 
 import { useActionState, useMemo, useState } from 'react';
 import { createTasting, updateTasting, type FormState } from '../actions';
+import { AromaWheelPicker } from '@/components/aroma-wheel';
 import { ColorBarPicker } from '@/components/color-bar';
 import { Field, inputClass, SubmitButton, textareaClass } from '@/components/form';
 import { PhotoInput } from '@/components/photo-input';
 import { WhiskyFields } from '@/components/whisky-fields';
 import { averageScore, formatDate, formatOpenAge } from '@/lib/format';
 import {
-  AROMA_GROUPS,
-  AROMA_GROUP_LABELS,
   BOTTLE_STATUS_LABELS,
   BUY_AGAIN_LABELS,
   type AromaTag,
@@ -120,16 +119,6 @@ export function TastingForm({
     () => new Set(initial?.tasting_aromas.map((row) => row.aroma_tags.id) ?? []),
     [initial]
   );
-
-  const tagsByGroup = useMemo(() => {
-    const map = new Map<string, AromaTag[]>();
-    for (const tag of aromaTags) {
-      const list = map.get(tag.grp) ?? [];
-      list.push(tag);
-      map.set(tag.grp, list);
-    }
-    return map;
-  }, [aromaTags]);
 
   return (
     <form action={action} className="space-y-8">
@@ -252,34 +241,7 @@ export function TastingForm({
 
       <section>
         <h2 className="text-[21px] font-semibold mb-4">아로마</h2>
-        <div className="space-y-4">
-          {AROMA_GROUPS.map((grp) => {
-            const tags = tagsByGroup.get(grp);
-            if (!tags || tags.length === 0) return null;
-            return (
-              <div key={grp}>
-                <p className="text-xs text-faint mb-2">{AROMA_GROUP_LABELS[grp]}</p>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
-                    <label
-                      key={tag.id}
-                      className="inline-flex items-center h-9 px-3.5 rounded-full border border-hairline text-sm text-muted cursor-pointer select-none has-checked:border-accent has-checked:text-accent-bright has-checked:bg-accent/10"
-                    >
-                      <input
-                        type="checkbox"
-                        name="aroma_tags"
-                        value={tag.id}
-                        defaultChecked={initialTagIds.has(tag.id)}
-                        className="sr-only"
-                      />
-                      {tag.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <AromaWheelPicker aromaTags={aromaTags} defaultSelected={[...initialTagIds]} />
       </section>
 
       <section className="space-y-4">

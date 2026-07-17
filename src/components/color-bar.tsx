@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { ColorDot } from './color-swatch';
 import { hexToRgb, whiskyColor, WHISKY_COLORS } from '@/lib/types';
 
 const STEPS = 1000; // 연속에 가까운 해상도
@@ -36,6 +35,35 @@ function positionOf(value: string | null | undefined): number | null {
     }
   }
   return bestIndex / (WHISKY_COLORS.length - 1);
+}
+
+/** 선택 색으로 채워진 글렌캐런 잔 프리뷰 */
+function GlassPreview({ hex }: { hex: string | null }) {
+  return (
+    <svg viewBox="0 0 48 40" className="w-24 h-20" aria-hidden>
+      {hex && (
+        <path
+          d="M17.3 15 C18.4 19.8 19.9 22 21.4 23.9 C22.3 25.1 22.7 26 22.8 27.2 L25.2 27.2 C25.3 26 25.7 25.1 26.6 23.9 C28.1 22 29.6 19.8 30.7 15 Z"
+          fill={hex}
+        />
+      )}
+      <path
+        d="M16 6c0 9 2.4 13.4 4.6 16.4 1.2 1.6 1.6 3 1.6 5.2h3.6c0-2.2.4-3.6 1.6-5.2C29.6 19.4 32 15 32 6H16Z"
+        fill="none"
+        stroke="var(--color-hairline)"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <path
+        d="M22.8 27.6v3.6M25.2 27.6v3.6M17 34.8h14"
+        fill="none"
+        stroke="var(--color-hairline)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 }
 
 /**
@@ -75,24 +103,25 @@ export function ColorBarPicker({ defaultValue }: { defaultValue?: string | null 
           aria-valuetext={resolved?.label ?? '기록 안 함'}
         />
       </div>
-      <div className="flex items-center justify-between mt-2 min-h-6">
-        {hex ? (
-          <ColorDot colorKey={hex} />
+      <div className="flex flex-col items-center mt-4">
+        <GlassPreview hex={hex} />
+        {resolved ? (
+          <>
+            <p className="font-display text-[19px] mt-1">{resolved.label}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setPos(null);
+                setTouched(true);
+              }}
+              className="text-faint text-xs mt-1"
+              aria-label="색상 선택 지우기"
+            >
+              지움
+            </button>
+          </>
         ) : (
-          <span className="text-sm text-faint">바를 드래그해서 색을 선택하세요</span>
-        )}
-        {hex && (
-          <button
-            type="button"
-            onClick={() => {
-              setPos(null);
-              setTouched(true);
-            }}
-            className="text-faint text-xs"
-            aria-label="색상 선택 지우기"
-          >
-            지움
-          </button>
+          <p className="text-sm text-faint mt-1">바를 드래그해서 색을 선택하세요</p>
         )}
       </div>
     </div>
