@@ -82,7 +82,16 @@ export default async function WhiskyDetailPage({
         </div>
       </header>
 
-      <div className="flex gap-3">
+      {whisky.image_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={whisky.image_url}
+          alt={whisky.name}
+          className="w-full max-h-72 object-cover rounded-(--radius-card) border border-hairline"
+        />
+      )}
+
+      <div className="flex flex-wrap gap-3">
         <Link
           href={`/tastings/new?whisky=${whisky.id}`}
           className="h-10 px-5 inline-flex items-center rounded-full bg-accent text-on-accent text-sm font-semibold"
@@ -94,6 +103,12 @@ export default async function WhiskyDetailPage({
           className="h-10 px-5 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
         >
           구매 기록 추가
+        </Link>
+        <Link
+          href={`/whiskies/${whisky.id}/edit`}
+          className="h-10 px-5 inline-flex items-center rounded-full border border-hairline text-muted text-sm"
+        >
+          수정
         </Link>
       </div>
 

@@ -73,11 +73,27 @@ export default async function BottlesPage() {
                           </p>
                         )}
                       </div>
-                      {status === 'open' && (
-                        <span className="text-sm text-muted tabular-nums shrink-0">
-                          {bottle.remaining_pct}%
-                        </span>
-                      )}
+                      <div className="flex items-center gap-3 shrink-0">
+                        {status === 'open' && (
+                          <Link
+                            href={`/tastings/new?whisky=${bottle.whisky_id}&bottle=${bottle.id}`}
+                            className="h-8 px-3 inline-flex items-center rounded-full border border-accent text-accent-bright text-xs"
+                          >
+                            시음 기록
+                          </Link>
+                        )}
+                        <Link
+                          href={`/bottles/${bottle.id}/edit`}
+                          className="text-muted text-xs underline underline-offset-4"
+                        >
+                          수정
+                        </Link>
+                        {status === 'open' && (
+                          <span className="text-sm text-muted tabular-nums">
+                            {bottle.remaining_pct}%
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {status === 'open' && (
                       <div className="mt-3">

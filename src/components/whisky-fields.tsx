@@ -1,8 +1,14 @@
 import { Field, inputClass } from './form';
-import { CATEGORIES, CATEGORY_LABELS } from '@/lib/types';
+import { CATEGORIES, CATEGORY_LABELS, type Whisky } from '@/lib/types';
 
-/** 위스키 기본 정보 입력 필드 묶음. 시음 노트의 즉석 등록에서도 prefix를 붙여 재사용한다. */
-export function WhiskyFields({ prefix = '' }: { prefix?: string }) {
+/** 위스키 기본 정보 입력 필드 묶음. 시음 노트의 즉석 등록(prefix)과 편집(defaults)에서 재사용한다. */
+export function WhiskyFields({
+  prefix = '',
+  defaults,
+}: {
+  prefix?: string;
+  defaults?: Partial<Whisky>;
+}) {
   return (
     <div className="space-y-4">
       <Field label="이름" htmlFor={`${prefix}name`} required>
@@ -10,6 +16,7 @@ export function WhiskyFields({ prefix = '' }: { prefix?: string }) {
           id={`${prefix}name`}
           name={`${prefix}name`}
           required
+          defaultValue={defaults?.name ?? ''}
           className={inputClass}
           placeholder="예: Glenfiddich 18"
         />
@@ -20,7 +27,7 @@ export function WhiskyFields({ prefix = '' }: { prefix?: string }) {
             id={`${prefix}category`}
             name={`${prefix}category`}
             required
-            defaultValue=""
+            defaultValue={defaults?.category ?? ''}
             className={inputClass}
           >
             <option value="" disabled>
@@ -37,6 +44,7 @@ export function WhiskyFields({ prefix = '' }: { prefix?: string }) {
           <input
             id={`${prefix}region`}
             name={`${prefix}region`}
+            defaultValue={defaults?.region ?? ''}
             className={inputClass}
             placeholder="예: 스페이사이드"
           />
@@ -46,6 +54,7 @@ export function WhiskyFields({ prefix = '' }: { prefix?: string }) {
         <input
           id={`${prefix}distillery`}
           name={`${prefix}distillery`}
+          defaultValue={defaults?.distillery ?? ''}
           className={inputClass}
           placeholder="예: Glenfiddich"
         />
@@ -59,6 +68,7 @@ export function WhiskyFields({ prefix = '' }: { prefix?: string }) {
             step="0.1"
             min="1"
             max="99.9"
+            defaultValue={defaults?.abv ?? ''}
             className={inputClass}
             placeholder="43"
           />
@@ -69,6 +79,7 @@ export function WhiskyFields({ prefix = '' }: { prefix?: string }) {
             name={`${prefix}age_years`}
             type="number"
             min="1"
+            defaultValue={defaults?.age_years ?? ''}
             className={inputClass}
             placeholder="18"
           />
@@ -77,6 +88,7 @@ export function WhiskyFields({ prefix = '' }: { prefix?: string }) {
           <input
             id={`${prefix}cask_type`}
             name={`${prefix}cask_type`}
+            defaultValue={defaults?.cask_type ?? ''}
             className={inputClass}
             placeholder="셰리"
           />

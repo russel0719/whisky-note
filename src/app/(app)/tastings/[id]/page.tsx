@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CategoryBadge, Eyebrow, scoreTextClass } from '@/components/ui';
+import { ColorDot } from '@/components/color-swatch';
 import { averageScore, formatDate, formatKrw, formatOpenAge } from '@/lib/format';
 import { BUY_AGAIN_LABELS, type TastingFull } from '@/lib/types';
 import { deleteTasting } from '../actions';
@@ -83,8 +84,18 @@ export default async function TastingDetailPage({
             tasting.bottle_id == null && <span>바 · 모임 시음</span>
           )}
           {tasting.price_paid != null && <span>잔 {formatKrw(tasting.price_paid)}</span>}
+          <ColorDot colorKey={tasting.color} />
         </div>
       </header>
+
+      {tasting.photo_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={tasting.photo_url}
+          alt={`${tasting.whiskies.name} 시음 사진`}
+          className="w-full max-h-80 object-cover rounded-(--radius-card) border border-hairline"
+        />
+      )}
 
       <section className="space-y-3">
         <NoteBlock label="Nose" score={tasting.nose_score} note={tasting.nose_note} />
@@ -131,12 +142,28 @@ export default async function TastingDetailPage({
         </section>
       )}
 
-      <form action={deleteTasting} className="pt-4 border-t border-hairline-soft">
-        <input type="hidden" name="id" value={tasting.id} />
-        <button type="submit" className="text-danger text-sm">
-          이 노트 삭제
-        </button>
-      </form>
+      <div className="flex items-center justify-between pt-4 border-t border-hairline-soft">
+        <div className="flex gap-3">
+          <Link
+            href={`/tastings/${tasting.id}/edit`}
+            className="h-9 px-4 inline-flex items-center rounded-full border border-hairline text-muted text-sm"
+          >
+            수정
+          </Link>
+          <Link
+            href={`/tastings/new?whisky=${tasting.whisky_id}`}
+            className="h-9 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
+          >
+            이 위스키 다시 기록
+          </Link>
+        </div>
+        <form action={deleteTasting}>
+          <input type="hidden" name="id" value={tasting.id} />
+          <button type="submit" className="text-danger text-sm">
+            삭제
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

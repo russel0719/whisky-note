@@ -39,6 +39,34 @@ export async function createBottle(_prev: FormState, formData: FormData): Promis
   redirect('/bottles');
 }
 
+export async function updateBottle(_prev: FormState, formData: FormData): Promise<FormState> {
+  const id = String(formData.get('id') ?? '');
+  const whiskyId = String(formData.get('whisky_id') ?? '');
+  if (!id || !whiskyId) return { error: '잘못된 요청입니다.' };
+
+  const purchaseDate = String(formData.get('purchase_date') ?? '').trim();
+  if (!purchaseDate) return { error: '구매일을 입력해주세요.' };
+
+  const openDate = parseOptionalText(formData.get('open_date'));
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('bottles')
+    .update({
+      whisky_id: whiskyId,
+      purchase_date: purchaseDate,
+      purchase_price: parseOptionalNumber(formData.get('purchase_price')),
+      purchase_place: parseOptionalText(formData.get('purchase_place')),
+      size_ml: parseOptionalNumber(formData.get('size_ml')) ?? 700,
+      open_date: openDate,
+    })
+    .eq('id', id);
+  if (error) return { error: `저장에 실패했습니다: ${error.message}` };
+
+  revalidateBottleViews();
+  redirect('/bottles');
+}
+
 export async function openBottle(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '');
   const openDate = String(formData.get('open_date') ?? '').trim();

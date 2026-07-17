@@ -66,6 +66,27 @@ export const AROMA_GROUP_LABELS: Record<AromaGroup, string> = {
   other: '기타',
 };
 
+/** 위스키 색상 12단계 (SMWS 컬러 차트 근사). key가 tastings.color에 저장된다. */
+export const WHISKY_COLORS = [
+  { key: 'pale-straw', label: '페일 스트로', hex: '#ede1b1' },
+  { key: 'straw', label: '스트로', hex: '#e6d089' },
+  { key: 'pale-gold', label: '페일 골드', hex: '#dfc06c' },
+  { key: 'gold', label: '골드', hex: '#d9b259' },
+  { key: 'deep-gold', label: '딥 골드', hex: '#cfa03f' },
+  { key: 'amber', label: '앰버', hex: '#c68e2e' },
+  { key: 'deep-amber', label: '딥 앰버', hex: '#b87c22' },
+  { key: 'copper', label: '코퍼', hex: '#a96b1d' },
+  { key: 'burnished', label: '버니시드', hex: '#985c1b' },
+  { key: 'tawny', label: '토니', hex: '#874d19' },
+  { key: 'auburn', label: '어번', hex: '#744016' },
+  { key: 'mahogany', label: '마호가니', hex: '#5e3212' },
+] as const;
+export type WhiskyColorKey = (typeof WHISKY_COLORS)[number]['key'];
+
+export function whiskyColor(key: string | null | undefined) {
+  return WHISKY_COLORS.find((c) => c.key === key) ?? null;
+}
+
 export interface Whisky {
   id: string;
   user_id: string;
@@ -112,6 +133,8 @@ export interface Tasting {
   pairing: string | null;
   would_buy_again: BuyAgain | null;
   price_paid: number | null;
+  color: string | null;
+  photo_url: string | null;
   created_at: string;
 }
 

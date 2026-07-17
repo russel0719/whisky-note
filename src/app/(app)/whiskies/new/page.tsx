@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { createWhisky, type FormState } from '../actions';
 import { WhiskyFields } from '@/components/whisky-fields';
 import { SubmitButton } from '@/components/form';
+import { PhotoInput } from '@/components/photo-input';
 import { Eyebrow } from '@/components/ui';
 
 export default function NewWhiskyPage() {
@@ -17,6 +18,7 @@ export default function NewWhiskyPage() {
       </header>
       <form action={action} className="space-y-6">
         <WhiskyFields />
+        <PhotoInput name="image_url" label="보틀 사진" />
         {state.error && <p className="text-danger text-sm">{state.error}</p>}
         <SubmitButton pending={pending}>등록</SubmitButton>
       </form>

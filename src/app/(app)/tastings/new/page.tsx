@@ -8,9 +8,9 @@ export const metadata = { title: '시음 노트 작성' };
 export default async function NewTastingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ whisky?: string }>;
+  searchParams: Promise<{ whisky?: string; bottle?: string }>;
 }) {
-  const { whisky } = await searchParams;
+  const { whisky, bottle } = await searchParams;
   const supabase = await createClient();
 
   const [whiskiesRes, bottlesRes, tagsRes] = await Promise.all([
@@ -34,6 +34,7 @@ export default async function NewTastingPage({
         bottles={(bottlesRes.data ?? []) as Bottle[]}
         aromaTags={(tagsRes.data ?? []) as AromaTag[]}
         defaultWhiskyId={whisky}
+        defaultBottleId={bottle}
       />
     </div>
   );

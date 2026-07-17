@@ -1,8 +1,10 @@
 'use client';
 
 import { useActionState, useMemo, useState } from 'react';
-import { createTasting, type FormState } from '../actions';
+import { createTasting, updateTasting, type FormState } from '../actions';
+import { ColorSwatchPicker } from '@/components/color-swatch';
 import { Field, inputClass, SubmitButton, textareaClass } from '@/components/form';
+import { PhotoInput } from '@/components/photo-input';
 import { WhiskyFields } from '@/components/whisky-fields';
 import { averageScore, formatDate, formatOpenAge } from '@/lib/format';
 import {
@@ -13,6 +15,7 @@ import {
   type AromaTag,
   type Bottle,
   type BuyAgain,
+  type TastingFull,
 } from '@/lib/types';
 
 function today(): string {
@@ -48,7 +51,11 @@ function ScoreRow({
             value={value ?? ''}
             placeholder="—"
             onChange={(e) =>
-              onChange(e.target.value === '' ? null : Math.max(0, Math.min(100, Number(e.target.value))))
+              onChange(
+                e.target.value === ''
+                  ? null
+                  : Math.max(0, Math.min(100, Number(e.target.value)))
+              )
             }
             className="w-16 h-8 px-2 text-center rounded-(--radius-utility) bg-tile-1 border border-hairline text-accent-bright font-semibold tabular-nums"
           />
@@ -83,17 +90,25 @@ export function TastingForm({
   bottles,
   aromaTags,
   defaultWhiskyId,
+  defaultBottleId,
+  initial,
 }: {
   whiskies: { id: string; name: string }[];
   bottles: Bottle[];
   aromaTags: AromaTag[];
   defaultWhiskyId?: string;
+  defaultBottleId?: string;
+  initial?: TastingFull;
 }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(createTasting, {});
-  const [whiskyId, setWhiskyId] = useState(defaultWhiskyId ?? '');
-  const [nose, setNose] = useState<number | null>(null);
-  const [palate, setPalate] = useState<number | null>(null);
-  const [finish, setFinish] = useState<number | null>(null);
+  const isEdit = initial != null;
+  const [state, action, pending] = useActionState<FormState, FormData>(
+    isEdit ? updateTasting : createTasting,
+    {}
+  );
+  const [whiskyId, setWhiskyId] = useState(initial?.whisky_id ?? defaultWhiskyId ?? '');
+  const [nose, setNose] = useState<number | null>(initial?.nose_score ?? null);
+  const [palate, setPalate] = useState<number | null>(initial?.palate_score ?? null);
+  const [finish, setFinish] = useState<number | null>(initial?.finish_score ?? null);
 
   const isNewWhisky = whiskyId === '__new__';
   const whiskyBottles = useMemo(
@@ -101,6 +116,10 @@ export function TastingForm({
     [bottles, whiskyId]
   );
   const suggested = averageScore(nose, palate, finish);
+  const initialTagIds = useMemo(
+    () => new Set(initial?.tasting_aromas.map((row) => row.aroma_tags.id) ?? []),
+    [initial]
+  );
 
   const tagsByGroup = useMemo(() => {
     const map = new Map<string, AromaTag[]>();
@@ -114,6 +133,8 @@ export function TastingForm({
 
   return (
     <form action={action} className="space-y-8">
+      {isEdit && <input type="hidden" name="id" value={initial.id} />}
+
       <section className="space-y-4">
         <Field label="위스키" htmlFor="whisky_id" required>
           <select
@@ -132,7 +153,7 @@ export function TastingForm({
                 {w.name}
               </option>
             ))}
-            <option value="__new__">＋ 새 위스키 등록</option>
+            {!isEdit && <option value="__new__">＋ 새 위스키 등록</option>}
           </select>
         </Field>
 
@@ -144,7 +165,12 @@ export function TastingForm({
 
         {!isNewWhisky && whiskyBottles.length > 0 && (
           <Field label="보틀 연결 (개봉 경과 추적)" htmlFor="bottle_id">
-            <select id="bottle_id" name="bottle_id" defaultValue="" className={inputClass}>
+            <select
+              id="bottle_id"
+              name="bottle_id"
+              defaultValue={initial?.bottle_id ?? defaultBottleId ?? ''}
+              className={inputClass}
+            >
               <option value="">보틀 없이 (바 · 모임 시음)</option>
               {whiskyBottles.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -163,7 +189,7 @@ export function TastingForm({
               name="tasted_at"
               type="date"
               required
-              defaultValue={today()}
+              defaultValue={initial?.tasted_at?.slice(0, 10) ?? today()}
               className={inputClass}
             />
           </Field>
@@ -171,6 +197,7 @@ export function TastingForm({
             <input
               id="location"
               name="location"
+              defaultValue={initial?.location ?? ''}
               className={inputClass}
               placeholder="예: 집, OO바"
             />
@@ -184,6 +211,7 @@ export function TastingForm({
         <textarea
           name="nose_note"
           rows={2}
+          defaultValue={initial?.nose_note ?? ''}
           className={textareaClass}
           placeholder="향에 대한 노트 — 예: 꿀, 서양배, 은은한 오크"
         />
@@ -191,6 +219,7 @@ export function TastingForm({
         <textarea
           name="palate_note"
           rows={2}
+          defaultValue={initial?.palate_note ?? ''}
           className={textareaClass}
           placeholder="맛에 대한 노트 — 예: 바닐라, 시나몬, 크리미한 질감"
         />
@@ -198,6 +227,7 @@ export function TastingForm({
         <textarea
           name="finish_note"
           rows={2}
+          defaultValue={initial?.finish_note ?? ''}
           className={textareaClass}
           placeholder="여운에 대한 노트 — 예: 길고 드라이한 피니시"
         />
@@ -208,10 +238,16 @@ export function TastingForm({
             type="number"
             min={0}
             max={100}
+            defaultValue={initial?.overall_score ?? ''}
             placeholder={suggested != null ? `평균 ${suggested}` : '—'}
             className={inputClass}
           />
         </Field>
+      </section>
+
+      <section>
+        <h2 className="text-[21px] font-semibold mb-4">컬러</h2>
+        <ColorSwatchPicker defaultValue={initial?.color} />
       </section>
 
       <section>
@@ -233,6 +269,7 @@ export function TastingForm({
                         type="checkbox"
                         name="aroma_tags"
                         value={tag.id}
+                        defaultChecked={initialTagIds.has(tag.id)}
                         className="sr-only"
                       />
                       {tag.name}
@@ -250,14 +287,17 @@ export function TastingForm({
         <textarea
           name="comment"
           rows={3}
+          defaultValue={initial?.comment ?? ''}
           className={textareaClass}
           placeholder="총평 — 전체적인 인상, 함께한 사람, 그날의 기분"
         />
+        <PhotoInput name="photo_url" label="사진" defaultUrl={initial?.photo_url} />
         <div className="grid grid-cols-2 gap-3">
           <Field label="페어링" htmlFor="pairing">
             <input
               id="pairing"
               name="pairing"
+              defaultValue={initial?.pairing ?? ''}
               className={inputClass}
               placeholder="예: 다크초콜릿"
             />
@@ -269,6 +309,7 @@ export function TastingForm({
               type="number"
               min={0}
               step={100}
+              defaultValue={initial?.price_paid ?? ''}
               className={inputClass}
               placeholder="25000"
             />
@@ -286,6 +327,7 @@ export function TastingForm({
                   type="radio"
                   name="would_buy_again"
                   value={key}
+                  defaultChecked={initial?.would_buy_again === key}
                   className="sr-only"
                 />
                 {BUY_AGAIN_LABELS[key]}
@@ -296,7 +338,7 @@ export function TastingForm({
       </section>
 
       {state.error && <p className="text-danger text-sm">{state.error}</p>}
-      <SubmitButton pending={pending}>노트 저장</SubmitButton>
+      <SubmitButton pending={pending}>{isEdit ? '변경 사항 저장' : '노트 저장'}</SubmitButton>
     </form>
   );
 }
