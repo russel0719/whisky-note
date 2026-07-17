@@ -136,6 +136,36 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 0 1px var(--color-accent);
 }
 
+/* 컬러 바 피커 — 그라디언트 배경 위에서 트랙은 투명하게, 썸은 링으로만 */
+input[type="range"].color-range {
+  height: 100%;
+}
+input[type="range"].color-range::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+input[type="range"].color-range::-webkit-slider-thumb {
+  width: 24px;
+  height: 24px;
+  margin-top: 11px;
+  border-radius: 9999px;
+  background: rgba(26, 23, 20, 0.15);
+  border: 3px solid var(--color-ink);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+input[type="range"].color-range::-moz-range-track {
+  height: 100%;
+  background: transparent;
+}
+input[type="range"].color-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: rgba(26, 23, 20, 0.15);
+  border: 3px solid var(--color-ink);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
 /* 페이지 진입 모션 — (app)/template.tsx 에서 라우트 전환마다 재적용 */
 @keyframes page-in {
   from {

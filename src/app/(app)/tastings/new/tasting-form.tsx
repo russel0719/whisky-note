@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react';
 import { createTasting, updateTasting, type FormState } from '../actions';
-import { ColorSwatchPicker } from '@/components/color-swatch';
+import { ColorBarPicker } from '@/components/color-bar';
 import { Field, inputClass, SubmitButton, textareaClass } from '@/components/form';
 import { PhotoInput } from '@/components/photo-input';
 import { WhiskyFields } from '@/components/whisky-fields';
@@ -247,7 +247,7 @@ export function TastingForm({
 
       <section>
         <h2 className="text-[21px] font-semibold mb-4">컬러</h2>
-        <ColorSwatchPicker defaultValue={initial?.color} />
+        <ColorBarPicker defaultValue={initial?.color} />
       </section>
 
       <section>
