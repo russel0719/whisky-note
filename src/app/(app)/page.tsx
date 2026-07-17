@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { ScoreDial } from '@/components/charts';
 import {
   Card,
   EmptyState,
@@ -21,7 +23,7 @@ export default async function DashboardPage() {
       .select('*, whiskies(*)')
       .order('tasted_at', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(5),
+      .limit(6),
     supabase
       .from('bottles')
       .select('*, whiskies(*)')
@@ -40,9 +42,14 @@ export default async function DashboardPage() {
   const scores = tastingScoresRes.data ?? [];
   const tastingCount = scores.length;
 
-  const perTasting = scores
-    .map((t) => t.overall_score ?? averageScore(t.nose_score, t.palate_score, t.finish_score))
-    .filter((s): s is number => s != null);
+  const scoreOf = (t: {
+    nose_score: number | null;
+    palate_score: number | null;
+    finish_score: number | null;
+    overall_score: number | null;
+  }) => t.overall_score ?? averageScore(t.nose_score, t.palate_score, t.finish_score);
+
+  const perTasting = scores.map(scoreOf).filter((s): s is number => s != null);
   const avgOverall =
     perTasting.length > 0
       ? Math.round(perTasting.reduce((a, b) => a + b, 0) / perTasting.length)
@@ -55,12 +62,50 @@ export default async function DashboardPage() {
   }
   const topAromas = [...aromaCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
 
+  const hero = recent[0];
+  const rest = recent.slice(1);
+
   return (
     <div className="space-y-10">
       <header>
         <Eyebrow>Dashboard</Eyebrow>
         <h1 className="font-display text-[30px] md:text-[36px]">나의 위스키 기록</h1>
       </header>
+
+      {hero ? (
+        <Link href={`/tastings/${hero.id}`} className="block group">
+          <section
+            className="relative overflow-hidden bg-tile-2 border border-hairline rounded-(--radius-card) p-7 md:p-9 transition-colors group-hover:border-accent/30"
+            style={{
+              backgroundImage:
+                'radial-gradient(ellipse 60% 80% at 85% 0%, rgba(201, 150, 63, 0.07), transparent)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-6">
+              <div className="min-w-0">
+                <Eyebrow>최근 시음 · {formatDate(hero.tasted_at)}</Eyebrow>
+                <p className="font-display text-[26px] md:text-[32px] leading-tight truncate">
+                  {hero.whiskies.name}
+                </p>
+                {(hero.comment || hero.location) && (
+                  <p className="text-muted text-sm mt-2 line-clamp-2">
+                    {hero.comment ?? hero.location}
+                  </p>
+                )}
+              </div>
+              <div className="shrink-0">
+                <ScoreDial value={scoreOf(hero)} size={116} />
+              </div>
+            </div>
+          </section>
+        </Link>
+      ) : (
+        <EmptyState
+          message="아직 시음 노트가 없습니다. 첫 잔의 기억을 남겨보세요."
+          ctaHref="/tastings/new"
+          ctaLabel="시음 노트 작성"
+        />
+      )}
 
       <section className="grid grid-cols-3 gap-3">
         <Card className="text-center !p-4">
@@ -79,19 +124,19 @@ export default async function DashboardPage() {
         </Card>
       </section>
 
-      <section>
-        <SectionTitle>오픈 중인 보틀</SectionTitle>
-        {openBottles.length === 0 ? (
-          <EmptyState
-            message="개봉 중인 보틀이 없습니다."
-            ctaHref="/bottles/new"
-            ctaLabel="구매 기록 추가"
-          />
-        ) : (
-          <div className="space-y-3">
-            {openBottles.map((bottle) => (
-              <LinkCard key={bottle.id} href={`/whiskies/${bottle.whisky_id}`}>
-                <div className="flex items-center justify-between gap-4">
+      <div className="grid gap-10 md:grid-cols-2 md:gap-8">
+        <section>
+          <SectionTitle>오픈 중인 보틀</SectionTitle>
+          {openBottles.length === 0 ? (
+            <EmptyState
+              message="개봉 중인 보틀이 없습니다."
+              ctaHref="/bottles/new"
+              ctaLabel="구매 기록 추가"
+            />
+          ) : (
+            <div className="space-y-3">
+              {openBottles.map((bottle) => (
+                <LinkCard key={bottle.id} href={`/whiskies/${bottle.whisky_id}`}>
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{bottle.whiskies.name}</p>
                     <p className="text-sm text-muted mt-0.5">
@@ -99,31 +144,24 @@ export default async function DashboardPage() {
                       {bottle.remaining_pct}%
                     </p>
                   </div>
-                </div>
-                <div className="mt-3">
-                  <RemainingBar pct={bottle.remaining_pct} />
-                </div>
-              </LinkCard>
-            ))}
-          </div>
-        )}
-      </section>
+                  <div className="mt-3">
+                    <RemainingBar pct={bottle.remaining_pct} />
+                  </div>
+                </LinkCard>
+              ))}
+            </div>
+          )}
+        </section>
 
-      <section>
-        <SectionTitle>최근 시음 노트</SectionTitle>
-        {recent.length === 0 ? (
-          <EmptyState
-            message="아직 시음 노트가 없습니다. 첫 잔의 기억을 남겨보세요."
-            ctaHref="/tastings/new"
-            ctaLabel="시음 노트 작성"
-          />
-        ) : (
-          <div className="space-y-3">
-            {recent.map((tasting) => {
-              const score =
-                tasting.overall_score ??
-                averageScore(tasting.nose_score, tasting.palate_score, tasting.finish_score);
-              return (
+        <section>
+          <SectionTitle>시음 노트</SectionTitle>
+          {rest.length === 0 ? (
+            <p className="text-muted text-sm">
+              {hero ? '더 많은 노트가 쌓이면 여기에 표시됩니다.' : ''}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {rest.map((tasting) => (
                 <LinkCard
                   key={tasting.id}
                   href={`/tastings/${tasting.id}`}
@@ -133,13 +171,13 @@ export default async function DashboardPage() {
                     <p className="font-semibold truncate">{tasting.whiskies.name}</p>
                     <p className="text-sm text-muted mt-0.5">{formatDate(tasting.tasted_at)}</p>
                   </div>
-                  <ScoreFigure value={score} />
+                  <ScoreFigure value={scoreOf(tasting)} />
                 </LinkCard>
-              );
-            })}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
 
       {topAromas.length > 0 && (
         <section>

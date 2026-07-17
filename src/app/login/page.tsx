@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { signIn, signUp, type AuthState } from './actions';
+import { GlencairnArt } from '@/components/ui';
 
 const initialState: AuthState = {};
 
@@ -14,9 +15,16 @@ export default function LoginPage() {
   const pending = mode === 'signin' ? signInPending : signUpPending;
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6">
+    <main
+      className="min-h-screen flex flex-col items-center justify-center px-6"
+      style={{
+        backgroundImage:
+          'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201, 150, 63, 0.06), transparent)',
+      }}
+    >
       <div className="w-full max-w-sm">
         <header className="text-center mb-12">
+          <GlencairnArt className="w-12 h-12 mx-auto mb-5 text-accent" />
           <p className="text-accent text-[13px] tracking-[0.3em] uppercase mb-3">Whisky Note</p>
           <h1 className="font-display text-[36px] leading-tight">
             한 잔의 기억을

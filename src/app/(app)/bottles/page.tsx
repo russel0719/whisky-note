@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Card, EmptyState, PageHeader, RemainingBar, SectionTitle } from '@/components/ui';
+import { BottleGauge } from '@/components/charts';
+import { Card, EmptyState, PageHeader, SectionTitle } from '@/components/ui';
 import { formatDate, formatKrw, formatOpenAge } from '@/lib/format';
 import type { BottleStatus, BottleWithWhisky } from '@/lib/types';
 import { BottleControls } from './bottle-controls';
@@ -88,18 +89,9 @@ export default async function BottlesPage() {
                         >
                           수정
                         </Link>
-                        {status === 'open' && (
-                          <span className="text-sm text-muted tabular-nums">
-                            {bottle.remaining_pct}%
-                          </span>
-                        )}
+                        {status === 'open' && <BottleGauge pct={bottle.remaining_pct} height={56} />}
                       </div>
                     </div>
-                    {status === 'open' && (
-                      <div className="mt-3">
-                        <RemainingBar pct={bottle.remaining_pct} />
-                      </div>
-                    )}
                     <BottleControls bottle={bottle} />
                   </Card>
                 ))}

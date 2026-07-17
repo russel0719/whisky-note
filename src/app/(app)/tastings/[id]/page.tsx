@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { ScoreDial } from '@/components/charts';
 import { Card, CategoryBadge, Eyebrow, scoreTextClass } from '@/components/ui';
 import { ColorDot } from '@/components/color-swatch';
 import { averageScore, formatDate, formatKrw, formatOpenAge } from '@/lib/format';
@@ -64,15 +65,12 @@ export default async function TastingDetailPage({
           <Link href={`/whiskies/${tasting.whisky_id}`} className="hover:text-accent-bright">
             <h1 className="font-display text-[30px] leading-tight">{tasting.whiskies.name}</h1>
           </Link>
-          <div className="text-right shrink-0">
-            <p
-              className={`font-display text-[44px] tabular-nums leading-none ${scoreTextClass(overall)}`}
-            >
-              {overall ?? '—'}
-            </p>
-            <p className="text-xs text-faint mt-1">
-              {tasting.overall_score != null ? '총점' : 'N/P/F 평균'}
-            </p>
+          <div className="shrink-0">
+            <ScoreDial
+              value={overall}
+              size={104}
+              label={tasting.overall_score != null ? '총점' : 'N/P/F 평균'}
+            />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-3 text-sm text-muted">
