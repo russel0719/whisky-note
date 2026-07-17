@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Card, CategoryBadge, EmptyState } from '@/components/ui';
+import { CategoryBadge, EmptyState, LinkCard, PageHeader } from '@/components/ui';
 import { inputClass } from '@/components/form';
 import { CATEGORIES, CATEGORY_LABELS, type Category, type Whisky } from '@/lib/types';
 
@@ -24,18 +24,18 @@ export default async function WhiskiesPage({
 
   return (
     <div>
-      <header className="flex items-end justify-between mb-6">
-        <div>
-          <p className="text-accent text-sm tracking-[0.25em] uppercase mb-2">Collection</p>
-          <h1 className="text-[28px]">위스키</h1>
-        </div>
-        <Link
-          href="/whiskies/new"
-          className="h-10 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
-        >
-          + 등록
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="Collection"
+        title="위스키"
+        action={
+          <Link
+            href="/whiskies/new"
+            className="h-10 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
+          >
+            + 등록
+          </Link>
+        }
+      />
 
       <form className="flex gap-2 mb-6">
         <input
@@ -70,24 +70,22 @@ export default async function WhiskiesPage({
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {whiskies.map((whisky) => (
-            <Link key={whisky.id} href={`/whiskies/${whisky.id}`} className="block">
-              <Card className="h-full">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="font-semibold">{whisky.name}</p>
-                  <CategoryBadge category={whisky.category} />
-                </div>
-                <p className="text-sm text-muted mt-1.5">
-                  {[
-                    whisky.distillery,
-                    whisky.region,
-                    whisky.age_years ? `${whisky.age_years}년` : null,
-                    whisky.abv ? `${whisky.abv}%` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ') || '상세 정보 없음'}
-                </p>
-              </Card>
-            </Link>
+            <LinkCard key={whisky.id} href={`/whiskies/${whisky.id}`} className="h-full">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-semibold">{whisky.name}</p>
+                <CategoryBadge category={whisky.category} />
+              </div>
+              <p className="text-sm text-muted mt-1.5">
+                {[
+                  whisky.distillery,
+                  whisky.region,
+                  whisky.age_years ? `${whisky.age_years}년` : null,
+                  whisky.abv ? `${whisky.abv}%` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || '상세 정보 없음'}
+              </p>
+            </LinkCard>
           ))}
         </div>
       )}

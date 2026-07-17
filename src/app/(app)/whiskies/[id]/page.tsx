@@ -1,7 +1,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Card, CategoryBadge, RemainingBar, SectionTitle } from '@/components/ui';
+import {
+  Card,
+  CategoryBadge,
+  Eyebrow,
+  LinkCard,
+  RemainingBar,
+  ScoreFigure,
+  scoreTextClass,
+  SectionTitle,
+} from '@/components/ui';
 import { averageScore, formatDate, formatKrw, formatOpenAge } from '@/lib/format';
 import { BOTTLE_STATUS_LABELS, type Bottle, type Tasting, type Whisky } from '@/lib/types';
 import { deleteWhisky } from '../actions';
@@ -43,12 +52,14 @@ export default async function WhiskyDetailPage({
       <header>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-accent text-sm tracking-[0.25em] uppercase mb-2">Whisky</p>
-            <h1 className="text-[28px] leading-tight">{whisky.name}</h1>
+            <Eyebrow>Whisky</Eyebrow>
+            <h1 className="font-display text-[30px] leading-tight">{whisky.name}</h1>
           </div>
           {avg != null && (
             <div className="text-right shrink-0">
-              <p className="text-[34px] font-semibold text-accent-bright tabular-nums leading-none">
+              <p
+                className={`font-display text-[36px] tabular-nums leading-none ${scoreTextClass(avg)}`}
+              >
                 {avg}
               </p>
               <p className="text-xs text-faint mt-1">평균 점수</p>
@@ -135,19 +146,19 @@ export default async function WhiskyDetailPage({
                 tasting.overall_score ??
                 averageScore(tasting.nose_score, tasting.palate_score, tasting.finish_score);
               return (
-                <Link key={tasting.id} href={`/tastings/${tasting.id}`} className="block">
-                  <Card className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold">{formatDate(tasting.tasted_at)}</p>
-                      <p className="text-sm text-muted mt-0.5 truncate">
-                        {tasting.comment || tasting.palate_note || '노트 없음'}
-                      </p>
-                    </div>
-                    <p className="text-[22px] font-semibold text-accent-bright tabular-nums shrink-0">
-                      {score ?? '—'}
+                <LinkCard
+                  key={tasting.id}
+                  href={`/tastings/${tasting.id}`}
+                  className="flex items-center justify-between gap-4"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{formatDate(tasting.tasted_at)}</p>
+                    <p className="text-sm text-muted mt-0.5 truncate">
+                      {tasting.comment || tasting.palate_note || '노트 없음'}
                     </p>
-                  </Card>
-                </Link>
+                  </div>
+                  <ScoreFigure value={score} />
+                </LinkCard>
               );
             })}
           </div>

@@ -17,8 +17,8 @@ export default function LoginPage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <header className="text-center mb-12">
-          <p className="text-accent text-sm tracking-[0.3em] uppercase mb-3">Whisky Note</p>
-          <h1 className="text-[34px] leading-tight">
+          <p className="text-accent text-[13px] tracking-[0.3em] uppercase mb-3">Whisky Note</p>
+          <h1 className="font-display text-[36px] leading-tight">
             한 잔의 기억을
             <br />
             기록하다

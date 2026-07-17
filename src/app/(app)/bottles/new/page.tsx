@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, Eyebrow } from '@/components/ui';
 import { BottleForm } from './bottle-form';
 
 export const metadata = { title: '구매 기록' };
@@ -17,8 +17,8 @@ export default async function NewBottlePage({
   return (
     <div className="max-w-lg">
       <header className="mb-8">
-        <p className="text-accent text-sm tracking-[0.25em] uppercase mb-2">Purchase</p>
-        <h1 className="text-[28px]">구매 기록</h1>
+        <Eyebrow>Purchase</Eyebrow>
+        <h1 className="font-display text-[30px]">구매 기록</h1>
       </header>
       {whiskies.length === 0 ? (
         <EmptyState

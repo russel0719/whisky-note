@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { Eyebrow } from '@/components/ui';
 import type { AromaTag, Bottle } from '@/lib/types';
 import { TastingForm } from './tasting-form';
 
@@ -25,8 +26,8 @@ export default async function NewTastingPage({
   return (
     <div className="max-w-lg">
       <header className="mb-8">
-        <p className="text-accent text-sm tracking-[0.25em] uppercase mb-2">Tasting</p>
-        <h1 className="text-[28px]">시음 노트</h1>
+        <Eyebrow>Tasting</Eyebrow>
+        <h1 className="font-display text-[30px]">시음 노트</h1>
       </header>
       <TastingForm
         whiskies={(whiskiesRes.data ?? []) as { id: string; name: string }[]}

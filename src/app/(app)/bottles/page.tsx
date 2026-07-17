@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Card, EmptyState, RemainingBar, SectionTitle } from '@/components/ui';
+import { Card, EmptyState, PageHeader, RemainingBar, SectionTitle } from '@/components/ui';
 import { formatDate, formatKrw, formatOpenAge } from '@/lib/format';
 import type { BottleStatus, BottleWithWhisky } from '@/lib/types';
 import { BottleControls } from './bottle-controls';
@@ -23,18 +23,18 @@ export default async function BottlesPage() {
 
   return (
     <div className="space-y-10">
-      <header className="flex items-end justify-between">
-        <div>
-          <p className="text-accent text-sm tracking-[0.25em] uppercase mb-2">Cabinet</p>
-          <h1 className="text-[28px]">보틀</h1>
-        </div>
-        <Link
-          href="/bottles/new"
-          className="h-10 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
-        >
-          + 구매 기록
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="Cabinet"
+        title="보틀"
+        action={
+          <Link
+            href="/bottles/new"
+            className="h-10 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
+          >
+            + 구매 기록
+          </Link>
+        }
+      />
 
       {bottles.length === 0 ? (
         <EmptyState

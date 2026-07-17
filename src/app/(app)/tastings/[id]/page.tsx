@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Card, CategoryBadge } from '@/components/ui';
+import { Card, CategoryBadge, Eyebrow, scoreTextClass } from '@/components/ui';
 import { averageScore, formatDate, formatKrw, formatOpenAge } from '@/lib/format';
 import { BUY_AGAIN_LABELS, type TastingFull } from '@/lib/types';
 import { deleteTasting } from '../actions';
@@ -21,7 +21,9 @@ function NoteBlock({
       <div className="flex items-center justify-between">
         <p className="text-sm text-faint tracking-[0.15em] uppercase">{label}</p>
         {score != null && (
-          <p className="text-[22px] font-semibold text-accent-bright tabular-nums">{score}</p>
+          <p className={`font-display text-[24px] tabular-nums ${scoreTextClass(score)}`}>
+            {score}
+          </p>
         )}
       </div>
       {note && <p className="mt-2 leading-relaxed">{note}</p>}
@@ -56,15 +58,15 @@ export default async function TastingDetailPage({
   return (
     <div className="space-y-8">
       <header>
-        <p className="text-accent text-sm tracking-[0.25em] uppercase mb-2">
-          {formatDate(tasting.tasted_at)}
-        </p>
+        <Eyebrow>{formatDate(tasting.tasted_at)}</Eyebrow>
         <div className="flex items-start justify-between gap-4">
           <Link href={`/whiskies/${tasting.whisky_id}`} className="hover:text-accent-bright">
-            <h1 className="text-[28px] leading-tight">{tasting.whiskies.name}</h1>
+            <h1 className="font-display text-[30px] leading-tight">{tasting.whiskies.name}</h1>
           </Link>
           <div className="text-right shrink-0">
-            <p className="text-[40px] font-semibold text-accent-bright tabular-nums leading-none">
+            <p
+              className={`font-display text-[44px] tabular-nums leading-none ${scoreTextClass(overall)}`}
+            >
               {overall ?? '—'}
             </p>
             <p className="text-xs text-faint mt-1">

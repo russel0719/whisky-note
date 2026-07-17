@@ -2,19 +2,23 @@
 
 /* Whisky Note 디자인 토큰.
    구조(타이포 래더, 스페이싱, pill=액션 문법, 타일 리듬)는 ~/.claude/design.md를 따르고,
-   컬러만 다크+앰버 위스키 무드로 편차를 둔다.
+   컬러·세리프 디스플레이는 다크+앰버 위스키 무드로 편차를 둔다.
    편차 상세: ~/.claude/docs/projects/whisky-note.md "디자인 가이드라인" 참고. */
 @theme {
   /* Surface */
   --color-canvas: #1a1714;
   --color-tile-1: #211d19;
   --color-tile-2: #171310;
+  --color-tile-raised: #262119;
   --color-nav: #0f0d0b;
 
   /* Accent — 모든 인터랙티브 요소는 이 단일 액센트만 사용 */
   --color-accent: #c9963f;
   --color-accent-bright: #e3b563;
   --color-on-accent: #1a1714;
+
+  /* Score band — 점수가 표시되는 모든 곳에서 일관 적용 (ui.tsx scoreTextClass) */
+  --color-score-gold: #f2d08a;
 
   /* Text */
   --color-ink: #f4efe8;
@@ -59,9 +63,19 @@ h3 {
   letter-spacing: -0.02em;
 }
 
+/* 세리프 디스플레이 — 위스키 이름, 페이지 헤드라인, 큰 점수 전용.
+   라틴/숫자는 Playfair Display, 한글은 Noto Serif KR로 폴백. */
+.font-display {
+  font-family: var(--font-playfair), var(--font-noto-serif), "Noto Serif KR",
+    ui-serif, serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
 button,
 a {
-  transition: transform 0.12s ease, opacity 0.15s ease;
+  transition: transform 0.12s ease, opacity 0.15s ease, border-color 0.2s ease,
+    color 0.2s ease, background-color 0.2s ease;
 }
 
 button:active,
@@ -80,6 +94,90 @@ textarea {
   color-scheme: dark;
 }
 
+/* 커스텀 range 슬라이더 — 앰버 트랙/썸 */
 input[type="range"] {
-  accent-color: var(--color-accent);
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-hairline);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  border: 2px solid var(--color-canvas);
+  box-shadow: 0 0 0 1px var(--color-accent);
+  transition: transform 0.12s ease;
+}
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-hairline);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  border: 2px solid var(--color-canvas);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+/* 페이지 진입 모션 — (app)/template.tsx 에서 라우트 전환마다 재적용 */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-in {
+  animation: page-in 0.24s ease-out both;
+}
+
+/* 스켈레톤 펄스 */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.skeleton {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  background: var(--color-tile-1);
+  border-radius: var(--radius-utility);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-in,
+  .skeleton {
+    animation: none;
+  }
+  button,
+  a {
+    transition: none;
+  }
+  button:active,
+  a:active {
+    transform: none;
+  }
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Eyebrow } from '@/components/ui';
 
 export const metadata = { title: '기록 추가' };
 
@@ -19,8 +20,8 @@ export default function NewRecordPage() {
   return (
     <div>
       <header className="mb-8">
-        <p className="text-accent text-sm tracking-[0.25em] uppercase mb-2">New</p>
-        <h1 className="text-[28px]">어떤 기록인가요?</h1>
+        <Eyebrow>New</Eyebrow>
+        <h1 className="font-display text-[30px]">어떤 기록인가요?</h1>
       </header>
       <div className="grid gap-4 md:grid-cols-2">
         {OPTIONS.map((option) => (

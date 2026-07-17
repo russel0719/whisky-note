@@ -1,6 +1,14 @@
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Card, EmptyState, SectionTitle, RemainingBar } from '@/components/ui';
+import {
+  Card,
+  EmptyState,
+  Eyebrow,
+  LinkCard,
+  RemainingBar,
+  ScoreFigure,
+  scoreTextClass,
+  SectionTitle,
+} from '@/components/ui';
 import { averageScore, formatDate, formatOpenAge } from '@/lib/format';
 import type { BottleWithWhisky, TastingWithWhisky } from '@/lib/types';
 
@@ -50,21 +58,21 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-10">
       <header>
-        <p className="text-accent text-sm tracking-[0.25em] uppercase mb-2">Dashboard</p>
-        <h1 className="text-[28px] md:text-[34px]">나의 위스키 기록</h1>
+        <Eyebrow>Dashboard</Eyebrow>
+        <h1 className="font-display text-[30px] md:text-[36px]">나의 위스키 기록</h1>
       </header>
 
       <section className="grid grid-cols-3 gap-3">
         <Card className="text-center !p-4">
-          <p className="text-[26px] font-semibold tabular-nums">{tastingCount}</p>
+          <p className="font-display text-[28px] tabular-nums">{tastingCount}</p>
           <p className="text-xs text-muted mt-1">시음 노트</p>
         </Card>
         <Card className="text-center !p-4">
-          <p className="text-[26px] font-semibold tabular-nums">{whiskyCount}</p>
+          <p className="font-display text-[28px] tabular-nums">{whiskyCount}</p>
           <p className="text-xs text-muted mt-1">위스키</p>
         </Card>
         <Card className="text-center !p-4">
-          <p className="text-[26px] font-semibold tabular-nums text-accent-bright">
+          <p className={`font-display text-[28px] tabular-nums ${scoreTextClass(avgOverall)}`}>
             {avgOverall ?? '—'}
           </p>
           <p className="text-xs text-muted mt-1">평균 점수</p>
@@ -82,22 +90,20 @@ export default async function DashboardPage() {
         ) : (
           <div className="space-y-3">
             {openBottles.map((bottle) => (
-              <Link key={bottle.id} href={`/whiskies/${bottle.whisky_id}`} className="block">
-                <Card>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate">{bottle.whiskies.name}</p>
-                      <p className="text-sm text-muted mt-0.5">
-                        {formatOpenAge(bottle.open_date) ?? '개봉일 미입력'} · 잔량{' '}
-                        {bottle.remaining_pct}%
-                      </p>
-                    </div>
+              <LinkCard key={bottle.id} href={`/whiskies/${bottle.whisky_id}`}>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{bottle.whiskies.name}</p>
+                    <p className="text-sm text-muted mt-0.5">
+                      {formatOpenAge(bottle.open_date) ?? '개봉일 미입력'} · 잔량{' '}
+                      {bottle.remaining_pct}%
+                    </p>
                   </div>
-                  <div className="mt-3">
-                    <RemainingBar pct={bottle.remaining_pct} />
-                  </div>
-                </Card>
-              </Link>
+                </div>
+                <div className="mt-3">
+                  <RemainingBar pct={bottle.remaining_pct} />
+                </div>
+              </LinkCard>
             ))}
           </div>
         )}
@@ -118,17 +124,17 @@ export default async function DashboardPage() {
                 tasting.overall_score ??
                 averageScore(tasting.nose_score, tasting.palate_score, tasting.finish_score);
               return (
-                <Link key={tasting.id} href={`/tastings/${tasting.id}`} className="block">
-                  <Card className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-semibold truncate">{tasting.whiskies.name}</p>
-                      <p className="text-sm text-muted mt-0.5">{formatDate(tasting.tasted_at)}</p>
-                    </div>
-                    <p className="text-[22px] font-semibold text-accent-bright tabular-nums shrink-0">
-                      {score ?? '—'}
-                    </p>
-                  </Card>
-                </Link>
+                <LinkCard
+                  key={tasting.id}
+                  href={`/tastings/${tasting.id}`}
+                  className="flex items-center justify-between gap-4"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{tasting.whiskies.name}</p>
+                    <p className="text-sm text-muted mt-0.5">{formatDate(tasting.tasted_at)}</p>
+                  </div>
+                  <ScoreFigure value={score} />
+                </LinkCard>
               );
             })}
           </div>

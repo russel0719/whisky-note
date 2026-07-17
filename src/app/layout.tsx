@@ -1,5 +1,18 @@
 import type { Metadata, Viewport } from 'next';
+import { Noto_Serif_KR, Playfair_Display } from 'next/font/google';
 import './globals.css';
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['500', '600'],
+  variable: '--font-playfair',
+});
+
+const notoSerif = Noto_Serif_KR({
+  weight: ['500', '600'],
+  preload: false,
+  variable: '--font-noto-serif',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -23,7 +36,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" className={`${playfair.variable} ${notoSerif.variable}`}>
       <head>
         <link
           rel="stylesheet"
