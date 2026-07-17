@@ -66,25 +66,71 @@ export const AROMA_GROUP_LABELS: Record<AromaGroup, string> = {
   other: '기타',
 };
 
-/** 위스키 색상 12단계 (SMWS 컬러 차트 근사). key가 tastings.color에 저장된다. */
+/** 위스키 색상 그라디언트 기준점 16단계 (whiskys.co.uk 컬러 가이드 근사, 레드 계열 포함).
+ * tastings.color에는 연속 선택된 hex(`#rrggbb`)가 저장되고, 라벨은 가장 가까운 단계명으로 표시한다.
+ * (초기 버전은 key 문자열을 저장했으므로 key/legacy key도 계속 해석한다.) */
 export const WHISKY_COLORS = [
-  { key: 'pale-straw', label: '페일 스트로', hex: '#ede1b1' },
-  { key: 'straw', label: '스트로', hex: '#e6d089' },
-  { key: 'pale-gold', label: '페일 골드', hex: '#dfc06c' },
-  { key: 'gold', label: '골드', hex: '#d9b259' },
-  { key: 'deep-gold', label: '딥 골드', hex: '#cfa03f' },
-  { key: 'amber', label: '앰버', hex: '#c68e2e' },
-  { key: 'deep-amber', label: '딥 앰버', hex: '#b87c22' },
-  { key: 'copper', label: '코퍼', hex: '#a96b1d' },
-  { key: 'burnished', label: '버니시드', hex: '#985c1b' },
-  { key: 'tawny', label: '토니', hex: '#874d19' },
-  { key: 'auburn', label: '어번', hex: '#744016' },
-  { key: 'mahogany', label: '마호가니', hex: '#5e3212' },
+  { key: 'gin-clear', label: '진 클리어', hex: '#f6f1e0' },
+  { key: 'white-wine', label: '화이트 와인', hex: '#f2ebc4' },
+  { key: 'pale-straw', label: '페일 스트로', hex: '#eee1a6' },
+  { key: 'pale-gold', label: '페일 골드', hex: '#e8d283' },
+  { key: 'yellow-gold', label: '옐로 골드', hex: '#e3c161' },
+  { key: 'old-gold', label: '올드 골드', hex: '#dcae45' },
+  { key: 'amber', label: '앰버', hex: '#d49a32' },
+  { key: 'deep-gold', label: '딥 골드', hex: '#c98626' },
+  { key: 'deep-copper', label: '딥 코퍼', hex: '#b96f1e' },
+  { key: 'burnished', label: '버니시드', hex: '#a85a1a' },
+  { key: 'tawny', label: '토니', hex: '#96471d' },
+  { key: 'russet', label: '러셋', hex: '#883723' },
+  { key: 'auburn', label: '어번', hex: '#762c20' },
+  { key: 'mahogany', label: '마호가니', hex: '#61221a' },
+  { key: 'burnt-umber', label: '번트 엄버', hex: '#4e1e18' },
+  { key: 'treacle', label: '트리클', hex: '#371510' },
 ] as const;
-export type WhiskyColorKey = (typeof WHISKY_COLORS)[number]['key'];
 
-export function whiskyColor(key: string | null | undefined) {
-  return WHISKY_COLORS.find((c) => c.key === key) ?? null;
+/** 초기 12단계 팔레트에서 제거된 key → hex (기존 저장값 표시용) */
+const LEGACY_COLOR_HEX: Record<string, string> = {
+  straw: '#e6d089',
+  gold: '#d9b259',
+  'deep-amber': '#b87c22',
+  copper: '#a96b1d',
+};
+
+export function hexToRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+export const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+
+function nearestColorStop(hex: string) {
+  const [r, g, b] = hexToRgb(hex);
+  let best: (typeof WHISKY_COLORS)[number] = WHISKY_COLORS[0];
+  let bestDist = Infinity;
+  for (const stop of WHISKY_COLORS) {
+    const [sr, sg, sb] = hexToRgb(stop.hex);
+    const dist = (r - sr) ** 2 + (g - sg) ** 2 + (b - sb) ** 2;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = stop;
+    }
+  }
+  return best;
+}
+
+/** 저장값(hex 또는 key)을 표시용 { label, hex }로 해석 */
+export function whiskyColor(
+  value: string | null | undefined
+): { label: string; hex: string } | null {
+  if (!value) return null;
+  const stop = WHISKY_COLORS.find((c) => c.key === value);
+  if (stop) return { label: stop.label, hex: stop.hex };
+  const hex = HEX_COLOR_RE.test(value) ? value : LEGACY_COLOR_HEX[value];
+  if (!hex) return null;
+  return { label: nearestColorStop(hex).label, hex };
 }
 
 export interface Whisky {

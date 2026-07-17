@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { parseOptionalNumber, parseOptionalText, parseWhiskyFields } from '@/lib/parse';
-import { WHISKY_COLORS } from '@/lib/types';
+import { HEX_COLOR_RE, WHISKY_COLORS } from '@/lib/types';
 
 export interface FormState {
   error?: string;
@@ -47,7 +47,8 @@ function parseTastingFields(formData: FormData) {
       pairing: parseOptionalText(formData.get('pairing')),
       would_buy_again: ['yes', 'no', 'maybe'].includes(buyAgain) ? buyAgain : null,
       price_paid: parseOptionalNumber(formData.get('price_paid')),
-      color: WHISKY_COLORS.some((c) => c.key === color) ? color : null,
+      color:
+        HEX_COLOR_RE.test(color) || WHISKY_COLORS.some((c) => c.key === color) ? color : null,
       photo_url: parseOptionalText(formData.get('photo_url')),
     },
     tagIds: formData
