@@ -32,6 +32,11 @@ const TABS = [
       <path d="M5 3h11l3 3v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm3 7h8M8 14h8M8 18h5" />
     ),
   },
+  {
+    href: '/stats',
+    label: '통계',
+    icon: <path d="M4 20V10m5.5 10V4M15 20v-7m5 7V8" />,
+  },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -61,7 +66,7 @@ export function MobileTabBar() {
   const pathname = usePathname();
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-nav/80 backdrop-blur-xl border-t border-hairline-soft pb-[env(safe-area-inset-bottom)]">
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-5 h-16">
         {TABS.map((tab) => {
           const active = isActive(pathname, tab.href);
           return (

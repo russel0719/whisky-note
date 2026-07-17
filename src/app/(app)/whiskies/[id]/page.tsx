@@ -11,7 +11,8 @@ import {
   scoreTextClass,
   SectionTitle,
 } from '@/components/ui';
-import { averageScore, formatDate, formatKrw, formatOpenAge } from '@/lib/format';
+import { OpenAgeChart, Sparkline } from '@/components/charts';
+import { averageScore, daysSinceOpen, formatDate, formatKrw, formatOpenAge } from '@/lib/format';
 import { BOTTLE_STATUS_LABELS, type Bottle, type Tasting, type Whisky } from '@/lib/types';
 import { deleteWhisky } from '../actions';
 
@@ -42,10 +43,31 @@ export default async function WhiskyDetailPage({
   const bottles = (bottlesRes.data ?? []) as Bottle[];
   const tastings = (tastingsRes.data ?? []) as Tasting[];
 
-  const scores = tastings
-    .map((t) => t.overall_score ?? averageScore(t.nose_score, t.palate_score, t.finish_score))
-    .filter((s): s is number => s != null);
+  const scoreOf = (t: Tasting) =>
+    t.overall_score ?? averageScore(t.nose_score, t.palate_score, t.finish_score);
+  const scores = tastings.map(scoreOf).filter((s): s is number => s != null);
   const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+
+  // 오래된 → 최신 순 점수 추이
+  const chronological = [...tastings].reverse();
+  const trend = chronological.map(scoreOf).filter((s): s is number => s != null);
+
+  // 개봉일이 있는 보틀별 "개봉 경과 × 점수" 시리즈 (시음 2회 이상)
+  const openAgeSeries = bottles
+    .filter((b) => b.open_date)
+    .map((bottle) => ({
+      bottle,
+      points: chronological
+        .filter((t) => t.bottle_id === bottle.id)
+        .flatMap((t) => {
+          const days = daysSinceOpen(bottle.open_date, t.tasted_at);
+          const score = scoreOf(t);
+          return days != null && score != null
+            ? [{ days, score, date: formatDate(t.tasted_at) }]
+            : [];
+        }),
+    }))
+    .filter((s) => s.points.length >= 2);
 
   return (
     <div className="space-y-10">
@@ -150,8 +172,29 @@ export default async function WhiskyDetailPage({
         )}
       </section>
 
+      {openAgeSeries.length > 0 && (
+        <section>
+          <SectionTitle>개봉 경과에 따른 점수</SectionTitle>
+          <div className="space-y-4">
+            {openAgeSeries.map(({ bottle, points }) => (
+              <Card key={bottle.id}>
+                <p className="text-sm text-muted mb-2">
+                  {formatDate(bottle.purchase_date)} 구매 보틀
+                </p>
+                <OpenAgeChart points={points} />
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section>
-        <SectionTitle>시음 이력 {tastings.length > 0 && `(${tastings.length})`}</SectionTitle>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[21px] font-semibold">
+            시음 이력 {tastings.length > 0 && `(${tastings.length})`}
+          </h2>
+          {trend.length >= 2 && <Sparkline values={trend} />}
+        </div>
         {tastings.length === 0 ? (
           <p className="text-muted text-sm">아직 시음 노트가 없습니다.</p>
         ) : (

@@ -194,6 +194,132 @@ export function BottleGauge({ pct, height = 72 }: { pct: number; height?: number
   );
 }
 
+/**
+ * 월별 막대 차트 — 단일 시리즈(앰버), 4px 라운드 데이터 엔드, 마커 title 툴팁.
+ * 값 라벨은 최대값에만 직접 표기 (selective direct label).
+ */
+export function MonthlyBars({
+  data,
+  format = (v: number) => String(v),
+}: {
+  data: { label: string; value: number; title?: string }[];
+  format?: (v: number) => string;
+}) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  return (
+    <div className="flex items-end gap-[6px] h-36" role="img" aria-label="월별 차트">
+      {data.map((d) => {
+        const h = Math.round((d.value / max) * 100);
+        const isMax = d.value === max && d.value > 0;
+        return (
+          <div key={d.label} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+            {isMax && (
+              <span className="text-[10px] text-accent-bright tabular-nums whitespace-nowrap">
+                {format(d.value)}
+              </span>
+            )}
+            <div
+              className="w-full rounded-t-[4px] bg-accent"
+              style={{ height: `${Math.max(h, d.value > 0 ? 4 : 0)}%`, opacity: isMax ? 1 : 0.65 }}
+              title={d.title ?? `${d.label}: ${format(d.value)}`}
+            />
+            <span className="text-[10px] text-faint whitespace-nowrap">{d.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 개봉 경과 × 점수 라인 차트 — 한 보틀의 시음 점수를 개봉 후 경과일 축으로.
+ * 단일 시리즈, 2px 라인, 8px 마커 + title 툴팁, recessive 그리드.
+ */
+export function OpenAgeChart({
+  points,
+  width = 560,
+  height = 150,
+}: {
+  points: { days: number; score: number; date: string }[];
+  width?: number;
+  height?: number;
+}) {
+  if (points.length < 2) return null;
+  const sorted = [...points].sort((a, b) => a.days - b.days);
+  const padX = 34;
+  const padY = 18;
+  const maxDays = Math.max(...sorted.map((p) => p.days), 1);
+  const scores = sorted.map((p) => p.score);
+  const yMin = Math.max(0, Math.min(...scores) - 5);
+  const yMax = Math.min(100, Math.max(...scores) + 5);
+  const x = (days: number) => padX + (days / maxDays) * (width - padX * 2);
+  const y = (score: number) =>
+    height - padY - ((score - yMin) / (yMax - yMin || 1)) * (height - padY * 2);
+
+  const gridScores = [yMin, (yMin + yMax) / 2, yMax].map(Math.round);
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="w-full"
+      role="img"
+      aria-label={`개봉 경과에 따른 점수: ${sorted
+        .map((p) => `${p.days}일차 ${p.score}점`)
+        .join(', ')}`}
+    >
+      {gridScores.map((s) => (
+        <g key={s}>
+          <line
+            x1={padX}
+            y1={y(s)}
+            x2={width - padX}
+            y2={y(s)}
+            stroke="var(--color-hairline-soft)"
+            strokeWidth="1"
+          />
+          <text
+            x={padX - 6}
+            y={y(s)}
+            textAnchor="end"
+            dominantBaseline="middle"
+            fill="var(--color-faint)"
+            fontSize="10"
+          >
+            {s}
+          </text>
+        </g>
+      ))}
+      <polyline
+        points={sorted.map((p) => `${x(p.days)},${y(p.score)}`).join(' ')}
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {sorted.map((p, i) => (
+        <circle key={i} cx={x(p.days)} cy={y(p.score)} r="4" fill="var(--color-accent-bright)">
+          <title>{`개봉 ${p.days}일차 (${p.date}): ${p.score}점`}</title>
+        </circle>
+      ))}
+      {sorted.map((p, i) =>
+        i === 0 || i === sorted.length - 1 ? (
+          <text
+            key={`label-${i}`}
+            x={x(p.days)}
+            y={height - 4}
+            textAnchor="middle"
+            fill="var(--color-faint)"
+            fontSize="10"
+          >
+            {p.days}일차
+          </text>
+        ) : null
+      )}
+    </svg>
+  );
+}
+
 /** 점수 추이 스파크라인 — 단일 시리즈, 2px 라인 + 마지막 점 강조 */
 export function Sparkline({
   values,

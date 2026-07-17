@@ -11,7 +11,7 @@ import {
   scoreTextClass,
   SectionTitle,
 } from '@/components/ui';
-import { averageScore, formatDate, formatOpenAge } from '@/lib/format';
+import { averageScore, daysSinceOpen, formatDate, formatOpenAge } from '@/lib/format';
 import type { BottleWithWhisky, TastingWithWhisky } from '@/lib/types';
 
 export default async function DashboardPage() {
@@ -143,6 +143,11 @@ export default async function DashboardPage() {
                       {formatOpenAge(bottle.open_date) ?? '개봉일 미입력'} · 잔량{' '}
                       {bottle.remaining_pct}%
                     </p>
+                    {(daysSinceOpen(bottle.open_date) ?? 0) > 180 && bottle.remaining_pct > 0 && (
+                      <p className="text-xs text-accent-bright mt-1">
+                        개봉 6개월 경과 — 산화가 진행됩니다. 마셔주세요
+                      </p>
+                    )}
                   </div>
                   <div className="mt-3">
                     <RemainingBar pct={bottle.remaining_pct} />
