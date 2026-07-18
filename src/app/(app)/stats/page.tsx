@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { AromaRadar, MonthlyBars } from '@/components/charts';
+import { AromaRadar, MonthlyBars, PriceScatter } from '@/components/charts';
 import { Card, EmptyState, PageHeader, scoreTextClass, SectionTitle } from '@/components/ui';
 import { averageScore, formatKrw } from '@/lib/format';
 import {
@@ -13,13 +13,15 @@ import {
 export const metadata = { title: '통계' };
 
 interface TastingRow {
+  id: string;
+  bottle_id: string | null;
   tasted_at: string;
   price_paid: number | null;
   nose_score: number | null;
   palate_score: number | null;
   finish_score: number | null;
   overall_score: number | null;
-  whiskies: { category: Category } | null;
+  whiskies: { name: string; category: Category } | null;
 }
 
 function monthKey(iso: string): string {
@@ -33,7 +35,7 @@ export default async function StatsPage() {
     supabase
       .from('tastings')
       .select(
-        'tasted_at, price_paid, nose_score, palate_score, finish_score, overall_score, whiskies(category)'
+        'id, bottle_id, tasted_at, price_paid, nose_score, palate_score, finish_score, overall_score, whiskies(name, category)'
       ),
     supabase.from('bottles').select('*'),
     supabase.from('tasting_aromas').select('aroma_tags(grp)'),
@@ -121,6 +123,31 @@ export default async function StatsPage() {
     title: `${m}: ${countByMonth.get(m) ?? 0}회`,
   }));
 
+  // 가격 × 만족도 — 보틀 시음은 잔당(30ml) 환산 가격, 바 시음은 잔 가격
+  const bottleById = new Map(bottles.map((b) => [b.id, b]));
+  type ScatterPoint = { price: number; score: number; label: string; kind: 'bottle' | 'bar' };
+  const scatterPoints = tastings.flatMap((t): ScatterPoint[] => {
+    const score = scoreOf(t);
+    if (score == null) return [];
+    const label = t.whiskies?.name ?? '이름 없음';
+    if (t.bottle_id) {
+      const bottle = bottleById.get(t.bottle_id);
+      if (bottle?.purchase_price && bottle.size_ml > 0) {
+        return [
+          {
+            price: bottle.purchase_price / (bottle.size_ml / 30),
+            score,
+            label,
+            kind: 'bottle' as const,
+          },
+        ];
+      }
+      return [];
+    }
+    if (t.price_paid) return [{ price: t.price_paid, score, label, kind: 'bar' as const }];
+    return [];
+  });
+
   // 요약
   const totalSpend =
     bottles.reduce((sum, b) => sum + (b.purchase_price ?? 0), 0) +
@@ -198,6 +225,26 @@ export default async function StatsPage() {
           </section>
         )}
       </div>
+
+      {scatterPoints.length >= 2 && (
+        <section>
+          <SectionTitle>가격 × 만족도</SectionTitle>
+          <Card>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-muted">잔당 가격(30ml 환산) 대비 점수</p>
+              <div className="flex items-center gap-4 text-xs text-muted">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-accent-bright" /> 보틀
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full border-2 border-accent-bright" /> 바
+                </span>
+              </div>
+            </div>
+            <PriceScatter points={scatterPoints} />
+          </Card>
+        </section>
+      )}
 
       <section>
         <SectionTitle>월별 지출</SectionTitle>

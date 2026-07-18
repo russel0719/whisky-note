@@ -321,6 +321,105 @@ export function OpenAgeChart({
   );
 }
 
+function formatKrwShort(v: number): string {
+  if (v >= 10000) {
+    const man = v / 10000;
+    return `${man >= 10 ? Math.round(man) : man.toFixed(1)}만`;
+  }
+  return `${Math.round(v / 1000)}천`;
+}
+
+/**
+ * 가격 × 만족도 산점도 — x축은 잔당 환산 가격(보틀은 30ml 기준), y축은 점수.
+ * 보틀=채운 점 / 바=테두리 점 (색이 아닌 채움 방식으로 구분, 범례는 페이지에서 제공).
+ */
+export function PriceScatter({
+  points,
+  width = 560,
+  height = 230,
+}: {
+  points: { price: number; score: number; label: string; kind: 'bottle' | 'bar' }[];
+  width?: number;
+  height?: number;
+}) {
+  if (points.length < 2) return null;
+  const padX = 40;
+  const padY = 20;
+  const maxPrice = Math.max(...points.map((p) => p.price)) * 1.08;
+  const scores = points.map((p) => p.score);
+  const yMin = Math.max(0, Math.min(...scores) - 5);
+  const yMax = Math.min(100, Math.max(...scores) + 5);
+  const x = (price: number) => padX + (price / maxPrice) * (width - padX * 2);
+  const y = (score: number) =>
+    height - padY - ((score - yMin) / (yMax - yMin || 1)) * (height - padY * 2);
+
+  const gridScores = [yMin, (yMin + yMax) / 2, yMax].map(Math.round);
+  const xTicks = [maxPrice * 0.25, maxPrice * 0.5, maxPrice * 0.75];
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="w-full"
+      role="img"
+      aria-label={`잔당 가격 대비 점수 산점도, ${points.length}개 기록`}
+    >
+      {gridScores.map((s) => (
+        <g key={s}>
+          <line
+            x1={padX}
+            y1={y(s)}
+            x2={width - padX}
+            y2={y(s)}
+            stroke="var(--color-hairline-soft)"
+            strokeWidth="1"
+          />
+          <text
+            x={padX - 6}
+            y={y(s)}
+            textAnchor="end"
+            dominantBaseline="middle"
+            fill="var(--color-faint)"
+            fontSize="10"
+          >
+            {s}
+          </text>
+        </g>
+      ))}
+      {xTicks.map((price) => (
+        <text
+          key={price}
+          x={x(price)}
+          y={height - 4}
+          textAnchor="middle"
+          fill="var(--color-faint)"
+          fontSize="10"
+        >
+          ₩{formatKrwShort(price)}
+        </text>
+      ))}
+      {points.map((p, i) =>
+        p.kind === 'bottle' ? (
+          <circle key={i} cx={x(p.price)} cy={y(p.score)} r="5" fill="var(--color-accent-bright)">
+            <title>{`${p.label} · 잔당 ₩${Math.round(p.price).toLocaleString()} · ${p.score}점 (보틀)`}</title>
+          </circle>
+        ) : (
+          <circle
+            key={i}
+            cx={x(p.price)}
+            cy={y(p.score)}
+            r="4.5"
+            fill="var(--color-canvas)"
+            stroke="var(--color-accent-bright)"
+            strokeWidth="2"
+          >
+            <title>{`${p.label} · 잔 ₩${Math.round(p.price).toLocaleString()} · ${p.score}점 (바)`}</title>
+          </circle>
+        )
+      )}
+    </svg>
+  );
+}
+
 /** 점수 추이 스파크라인 — 단일 시리즈, 2px 라인 + 마지막 점 강조 */
 export function Sparkline({
   values,
