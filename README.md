@@ -20,6 +20,11 @@ cp .env.example .env.local  # NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_AN
 npm run dev
 ```
 
+선택 환경변수:
+
+- `NVIDIA_API_KEY` — 위스키 등록 시 "AI 자동 채우기"(증류소/분류/도수 등 추정)에 사용.
+  travel-plan과 동일한 NVIDIA API 키를 재사용한다. 없으면 해당 기능만 비활성화된다.
+
 ## Supabase 스키마 적용
 
 마이그레이션 소스는 `supabase/migrations/`에 있다.
