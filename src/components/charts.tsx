@@ -206,27 +206,28 @@ export function MonthlyBars({
   format?: (v: number) => string;
 }) {
   const max = Math.max(1, ...data.map((d) => d.value));
+  const total = data.reduce((sum, d) => sum + d.value, 0);
   return (
-    <div className="flex items-end gap-[6px] h-36" role="img" aria-label="월별 차트">
-      {data.map((d) => {
-        const h = Math.round((d.value / max) * 100);
-        const isMax = d.value === max && d.value > 0;
-        return (
-          <div key={d.label} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-            {isMax && (
-              <span className="text-[10px] text-accent-bright tabular-nums whitespace-nowrap">
-                {format(d.value)}
-              </span>
-            )}
-            <div
-              className="w-full rounded-t-[4px] bg-accent"
-              style={{ height: `${Math.max(h, d.value > 0 ? 4 : 0)}%`, opacity: isMax ? 1 : 0.65 }}
-              title={d.title ?? `${d.label}: ${format(d.value)}`}
-            />
-            <span className="text-[10px] text-faint whitespace-nowrap">{d.label}</span>
-          </div>
-        );
-      })}
+    <div>
+      <p className="text-xs text-muted mb-3 text-right tabular-nums">
+        12개월 합계 {format(total)} · 최고 {format(max)}
+      </p>
+      <div className="flex items-end gap-[6px] h-32" role="img" aria-label="월별 차트">
+        {data.map((d) => {
+          const h = Math.round((d.value / max) * 100);
+          const isMax = d.value === max && d.value > 0;
+          return (
+            <div key={d.label} className="flex-1 flex flex-col justify-end items-center gap-1 min-w-0 h-full">
+              <div
+                className="w-full rounded-t-[4px] bg-accent"
+                style={{ height: `${Math.max(h, d.value > 0 ? 4 : 0)}%`, opacity: isMax ? 1 : 0.65 }}
+                title={d.title ?? `${d.label}: ${format(d.value)}`}
+              />
+              <span className="text-[10px] text-faint whitespace-nowrap">{d.label}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -56,7 +56,7 @@ function ScoreRow({
                   : Math.max(0, Math.min(100, Number(e.target.value)))
               )
             }
-            className="w-16 h-8 px-2 text-center rounded-(--radius-utility) bg-tile-1 border border-hairline text-accent-bright font-semibold tabular-nums"
+            className="w-16 h-9 px-2 text-center rounded-(--radius-utility) bg-tile-1 border border-hairline text-accent-bright font-semibold tabular-nums text-[16px]"
           />
           {value != null && (
             <button

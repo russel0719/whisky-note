@@ -16,7 +16,7 @@ export default function LoginPage() {
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center px-6"
+      className="min-h-screen flex flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
       style={{
         backgroundImage:
           'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201, 150, 63, 0.06), transparent)',

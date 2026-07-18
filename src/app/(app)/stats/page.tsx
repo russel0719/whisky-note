@@ -137,26 +137,26 @@ export default async function StatsPage() {
     <div className="space-y-10">
       <PageHeader eyebrow="Insights" title="통계" />
 
-      <section className="grid grid-cols-3 gap-3">
-        <Card className="text-center !p-4">
-          <p className="font-display text-[22px] md:text-[26px] tabular-nums">
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Card className="!p-4 flex sm:flex-col items-baseline sm:items-center justify-between sm:justify-center sm:text-center gap-1">
+          <p className="text-xs text-muted sm:order-2 sm:mt-1 shrink-0">총 지출</p>
+          <p className="font-display text-[22px] md:text-[26px] tabular-nums sm:order-1">
             {formatKrw(totalSpend)}
           </p>
-          <p className="text-xs text-muted mt-1">총 지출</p>
         </Card>
-        <Card className="text-center !p-4">
-          <p className="font-display text-[22px] md:text-[26px] tabular-nums">
+        <Card className="!p-4 flex sm:flex-col items-baseline sm:items-center justify-between sm:justify-center sm:text-center gap-1">
+          <p className="text-xs text-muted sm:order-2 sm:mt-1 shrink-0">캐비닛 잔여 가치</p>
+          <p className="font-display text-[22px] md:text-[26px] tabular-nums sm:order-1">
             {formatKrw(Math.round(cabinetValue))}
           </p>
-          <p className="text-xs text-muted mt-1">캐비닛 잔여 가치</p>
         </Card>
-        <Card className="text-center !p-4">
+        <Card className="!p-4 flex sm:flex-col items-baseline sm:items-center justify-between sm:justify-center sm:text-center gap-1">
+          <p className="text-xs text-muted sm:order-2 sm:mt-1 shrink-0">평균 점수</p>
           <p
-            className={`font-display text-[22px] md:text-[26px] tabular-nums ${scoreTextClass(avgAll)}`}
+            className={`font-display text-[22px] md:text-[26px] tabular-nums sm:order-1 ${scoreTextClass(avgAll)}`}
           >
             {avgAll ?? '—'}
           </p>
-          <p className="text-xs text-muted mt-1">평균 점수</p>
         </Card>
       </section>
 

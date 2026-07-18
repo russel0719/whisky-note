@@ -28,7 +28,7 @@ function NoteBlock({
           </p>
         )}
       </div>
-      {note && <p className="mt-2 leading-relaxed">{note}</p>}
+      {note && <p className="mt-2 leading-relaxed break-words">{note}</p>}
     </Card>
   );
 }
@@ -62,7 +62,7 @@ export default async function TastingDetailPage({
       <header>
         <Eyebrow>{formatDate(tasting.tasted_at)}</Eyebrow>
         <div className="flex items-start justify-between gap-4">
-          <Link href={`/whiskies/${tasting.whisky_id}`} className="hover:text-accent-bright">
+          <Link href={`/whiskies/${tasting.whisky_id}`} className="hover:text-accent-bright min-w-0">
             <h1 className="font-display text-[30px] leading-tight">{tasting.whiskies.name}</h1>
           </Link>
           <div className="shrink-0">
@@ -122,7 +122,7 @@ export default async function TastingDetailPage({
           {tasting.comment && (
             <Card>
               <p className="text-sm text-faint mb-2">총평</p>
-              <p className="leading-relaxed">{tasting.comment}</p>
+              <p className="leading-relaxed break-words">{tasting.comment}</p>
             </Card>
           )}
           <div className="flex flex-wrap gap-2 text-sm">
@@ -140,8 +140,8 @@ export default async function TastingDetailPage({
         </section>
       )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-hairline-soft">
-        <div className="flex gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-hairline-soft">
+        <div className="flex flex-wrap gap-3">
           <Link
             href={`/tastings/${tasting.id}/edit`}
             className="h-9 px-4 inline-flex items-center rounded-full border border-hairline text-muted text-sm"

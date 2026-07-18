@@ -75,7 +75,7 @@ export default async function DashboardPage() {
       {hero ? (
         <Link href={`/tastings/${hero.id}`} className="block group">
           <section
-            className="relative overflow-hidden bg-tile-2 border border-hairline rounded-(--radius-card) p-7 md:p-9 transition-colors group-hover:border-accent/30"
+            className="relative overflow-hidden bg-tile-2 border border-hairline rounded-(--radius-card) p-5 md:p-9 transition-colors group-hover:border-accent/30"
             style={{
               backgroundImage:
                 'radial-gradient(ellipse 60% 80% at 85% 0%, rgba(201, 150, 63, 0.07), transparent)',
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
                 )}
               </div>
               <div className="shrink-0">
-                <ScoreDial value={scoreOf(hero)} size={116} />
+                <ScoreDial value={scoreOf(hero)} size={100} />
               </div>
             </div>
           </section>

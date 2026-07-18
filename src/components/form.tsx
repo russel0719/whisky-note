@@ -1,8 +1,9 @@
+/* 16px 미만이면 iOS가 포커스 시 화면을 자동 확대하므로 입력 폰트는 16px 고정 */
 export const inputClass =
-  'w-full h-11 px-3.5 rounded-(--radius-utility) bg-tile-1 border border-hairline placeholder:text-faint text-[15px]';
+  'w-full h-11 px-3.5 rounded-(--radius-utility) bg-tile-1 border border-hairline placeholder:text-faint text-[16px]';
 
 export const textareaClass =
-  'w-full px-3.5 py-2.5 rounded-(--radius-utility) bg-tile-1 border border-hairline placeholder:text-faint text-[15px] leading-relaxed';
+  'w-full px-3.5 py-2.5 rounded-(--radius-utility) bg-tile-1 border border-hairline placeholder:text-faint text-[16px] leading-relaxed';
 
 export function Field({
   label,

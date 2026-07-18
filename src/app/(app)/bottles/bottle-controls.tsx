@@ -22,12 +22,12 @@ export function BottleControls({ bottle }: { bottle: Bottle }) {
   const [, startTransition] = useTransition();
 
   const dateInputClass =
-    'h-9 px-2.5 rounded-(--radius-utility) bg-tile-2 border border-hairline text-sm';
+    'h-10 px-2.5 rounded-(--radius-utility) bg-tile-2 border border-hairline text-[16px]';
 
   if (bottle.status === 'unopened') {
     return (
-      <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-hairline-soft">
-        <form action={openBottle} className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-hairline-soft">
+        <form action={openBottle} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="id" value={bottle.id} />
           <input
             type="date"

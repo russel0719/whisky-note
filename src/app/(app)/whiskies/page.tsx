@@ -37,15 +37,19 @@ export default async function WhiskiesPage({
         }
       />
 
-      <form className="flex gap-2 mb-6">
+      <form className="flex flex-wrap gap-2 mb-6">
         <input
           type="search"
           name="q"
           defaultValue={q ?? ''}
           placeholder="이름 검색"
-          className={`${inputClass} rounded-full flex-1`}
+          className={`${inputClass} rounded-full w-full sm:w-auto sm:flex-1`}
         />
-        <select name="category" defaultValue={category ?? ''} className={`${inputClass} rounded-full w-36`}>
+        <select
+          name="category"
+          defaultValue={category ?? ''}
+          className={`${inputClass} rounded-full flex-1 sm:flex-none sm:w-36`}
+        >
           <option value="">전체 분류</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>

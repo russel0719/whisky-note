@@ -130,7 +130,7 @@ export function AromaWheelPicker({
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="var(--color-ink)"
-                fontSize="14"
+                fontSize="15"
                 fontWeight="600"
               >
                 {AROMA_GROUP_LABELS[grp]}
@@ -172,7 +172,7 @@ export function AromaWheelPicker({
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill={isOn ? '#241d15' : 'var(--color-muted)'}
-                      fontSize="11.5"
+                      fontSize="12.5"
                       fontWeight={isOn ? 600 : 400}
                       style={{ pointerEvents: 'none' }}
                     >

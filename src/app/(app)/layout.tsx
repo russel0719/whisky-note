@@ -5,7 +5,7 @@ import { signOut } from '@/app/login/actions';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <header className="sticky top-0 z-20 bg-nav/90 backdrop-blur-xl border-b border-hairline-soft">
+      <header className="sticky top-0 z-20 bg-nav/90 backdrop-blur-xl border-b border-hairline-soft pt-[env(safe-area-inset-top)]">
         <div className="max-w-4xl mx-auto px-5 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <svg viewBox="0 0 24 24" className="w-5 h-5 text-accent" fill="currentColor">

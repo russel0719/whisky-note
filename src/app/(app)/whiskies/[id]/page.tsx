@@ -73,7 +73,7 @@ export default async function WhiskyDetailPage({
     <div className="space-y-10">
       <header>
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <Eyebrow>Whisky</Eyebrow>
             <h1 className="font-display text-[30px] leading-tight">{whisky.name}</h1>
           </div>

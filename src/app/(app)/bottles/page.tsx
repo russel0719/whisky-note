@@ -74,24 +74,24 @@ export default async function BottlesPage() {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        {status === 'open' && (
-                          <Link
-                            href={`/tastings/new?whisky=${bottle.whisky_id}&bottle=${bottle.id}`}
-                            className="h-8 px-3 inline-flex items-center rounded-full border border-accent text-accent-bright text-xs"
-                          >
-                            시음 기록
-                          </Link>
-                        )}
-                        <Link
-                          href={`/bottles/${bottle.id}/edit`}
-                          className="text-muted text-xs underline underline-offset-4"
-                        >
-                          수정
-                        </Link>
-                        {status === 'open' && <BottleGauge pct={bottle.remaining_pct} height={56} />}
-                      </div>
+                      <Link
+                        href={`/bottles/${bottle.id}/edit`}
+                        className="text-muted text-xs underline underline-offset-4 shrink-0"
+                      >
+                        수정
+                      </Link>
                     </div>
+                    {status === 'open' && (
+                      <div className="flex items-center justify-between gap-3 mt-3">
+                        <Link
+                          href={`/tastings/new?whisky=${bottle.whisky_id}&bottle=${bottle.id}`}
+                          className="h-9 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
+                        >
+                          시음 기록
+                        </Link>
+                        <BottleGauge pct={bottle.remaining_pct} height={56} />
+                      </div>
+                    )}
                     <BottleControls bottle={bottle} />
                   </Card>
                 ))}
