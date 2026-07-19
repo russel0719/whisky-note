@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { parseOptionalNumber, parseOptionalText, parseWhiskyFields } from '@/lib/parse';
+import { parseOptionalNumber, parseOptionalText } from '@/lib/parse';
 import { HEX_COLOR_RE, WHISKY_COLORS } from '@/lib/types';
 
 export interface FormState {
@@ -64,17 +64,41 @@ export async function createTasting(_prev: FormState, formData: FormData): Promi
   let whiskyId = String(formData.get('whisky_id') ?? '');
   if (!whiskyId) return { error: '위스키를 선택해주세요.' };
 
-  // "새 위스키" 선택 시 즉석 등록
-  if (whiskyId === '__new__') {
-    const parsed = parseWhiskyFields(formData, 'new_');
-    if ('error' in parsed) return { error: parsed.error };
-    const { data, error } = await supabase
+  // "카탈로그에서 찾기" 선택 시 — 카탈로그 항목을 내 위스키로 등록(이미 있으면 재사용)
+  if (whiskyId === '__catalog__') {
+    const catalogId = String(formData.get('catalog_id') ?? '');
+    if (!catalogId) return { error: '카탈로그에서 위스키를 선택해주세요.' };
+    const { data: entry } = await supabase
+      .from('catalog')
+      .select('*')
+      .eq('id', catalogId)
+      .maybeSingle();
+    if (!entry) return { error: '카탈로그 항목을 찾지 못했습니다.' };
+
+    const { data: existing } = await supabase
       .from('whiskies')
-      .insert(parsed.fields)
       .select('id')
-      .single();
-    if (error) return { error: `위스키 등록에 실패했습니다: ${error.message}` };
-    whiskyId = data.id;
+      .ilike('name', entry.name)
+      .maybeSingle();
+    if (existing) {
+      whiskyId = existing.id;
+    } else {
+      const { data, error } = await supabase
+        .from('whiskies')
+        .insert({
+          name: entry.name,
+          distillery: entry.distillery,
+          category: entry.category,
+          region: entry.region,
+          abv: entry.abv,
+          age_years: entry.age_years,
+          cask_type: entry.cask_type,
+        })
+        .select('id')
+        .single();
+      if (error) return { error: `위스키 등록에 실패했습니다: ${error.message}` };
+      whiskyId = data.id;
+    }
   }
 
   const parsed = parseTastingFields(formData);
@@ -102,7 +126,7 @@ export async function createTasting(_prev: FormState, formData: FormData): Promi
 export async function updateTasting(_prev: FormState, formData: FormData): Promise<FormState> {
   const id = String(formData.get('id') ?? '');
   const whiskyId = String(formData.get('whisky_id') ?? '');
-  if (!id || !whiskyId || whiskyId === '__new__') return { error: '잘못된 요청입니다.' };
+  if (!id || !whiskyId || whiskyId.startsWith('__')) return { error: '잘못된 요청입니다.' };
 
   const parsed = parseTastingFields(formData);
   if ('error' in parsed) return { error: parsed.error };

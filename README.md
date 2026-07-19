@@ -26,10 +26,18 @@ npm run dev
   가입·로그인이 거부되고 기존 세션도 미들웨어에서 차단된다 (1인용 비공개 운영).
   미설정 시 제한 없음.
 
-- `CEREBRAS_API_KEY` — 위스키 등록 시 "AI 자동 채우기"(증류소/분류/도수 등 추정)에 사용.
-  Cerebras Inference (`gpt-oss-120b`, OpenAI 호환 API). 없으면 해당 기능만 비활성화된다.
-  free tier 한도(5 req/분)에 맞춰 UI가 12초 쿨다운을 걸고, 호출 후 토큰 사용량과
-  남은 rate limit을 화면에 표시한다.
+## 위스키 카탈로그
+
+위스키 마스터 데이터는 앱에서 직접 입력하지 않고 `whisky_note.catalog`(공용 읽기 전용)에서
+검색해 선택한다. 카탈로그는 두 스크립트로 관리한다 (Cerebras `gpt-oss-120b`, free tier
+5 req/분에 맞춰 배치 간 13초 대기):
+
+- `scripts/generate-catalog.mjs` — 초기 시드(주요 증류소 150곳 코어 라인업)를
+  마이그레이션 SQL로 생성. `node --env-file=.env.local scripts/generate-catalog.mjs`
+- `scripts/update-catalog.mjs` — 최근 출시/유행 제품을 카탈로그에 직접 upsert.
+  **GitHub Actions가 매월 1일 자동 실행** (`.github/workflows/catalog-update.yml`,
+  수동 실행: Actions 탭 → Catalog Update → Run workflow)
+  - 필요 GitHub Secrets: `CEREBRAS_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Supabase 스키마 적용
 

@@ -184,6 +184,18 @@ export interface Tasting {
   created_at: string;
 }
 
+export interface CatalogEntry {
+  id: string;
+  name: string;
+  distillery: string | null;
+  category: Category;
+  region: string | null;
+  country: string | null;
+  abv: number | null;
+  age_years: number | null;
+  cask_type: string | null;
+}
+
 export interface AromaTag {
   id: number;
   name: string;

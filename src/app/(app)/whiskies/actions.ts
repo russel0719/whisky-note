@@ -44,6 +44,45 @@ export async function updateWhisky(_prev: FormState, formData: FormData): Promis
   redirect(`/whiskies/${id}`);
 }
 
+/** 카탈로그 항목으로 내 위스키 생성. 같은 이름이 이미 있으면 그 상세로 이동. */
+export async function addWhiskyFromCatalog(formData: FormData): Promise<void> {
+  const catalogId = String(formData.get('catalog_id') ?? '');
+  if (!catalogId) return;
+
+  const supabase = await createClient();
+  const { data: entry } = await supabase
+    .from('catalog')
+    .select('*')
+    .eq('id', catalogId)
+    .maybeSingle();
+  if (!entry) return;
+
+  const { data: existing } = await supabase
+    .from('whiskies')
+    .select('id')
+    .ilike('name', entry.name)
+    .maybeSingle();
+  if (existing) redirect(`/whiskies/${existing.id}`);
+
+  const { data: created, error } = await supabase
+    .from('whiskies')
+    .insert({
+      name: entry.name,
+      distillery: entry.distillery,
+      category: entry.category,
+      region: entry.region,
+      abv: entry.abv,
+      age_years: entry.age_years,
+      cask_type: entry.cask_type,
+    })
+    .select('id')
+    .single();
+  if (error || !created) return;
+
+  revalidatePath('/whiskies');
+  redirect(`/whiskies/${created.id}`);
+}
+
 export async function deleteWhisky(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '');
   if (!id) return;

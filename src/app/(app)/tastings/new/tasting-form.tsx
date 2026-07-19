@@ -3,10 +3,10 @@
 import { useActionState, useMemo, useState } from 'react';
 import { createTasting, updateTasting, type FormState } from '../actions';
 import { AromaWheelPicker } from '@/components/aroma-wheel';
+import { CatalogSearch } from '@/components/catalog-search';
 import { ColorBarPicker } from '@/components/color-bar';
 import { Field, inputClass, SubmitButton, textareaClass } from '@/components/form';
 import { PhotoInput } from '@/components/photo-input';
-import { WhiskyFields } from '@/components/whisky-fields';
 import { averageScore, formatDate, formatOpenAge } from '@/lib/format';
 import {
   BOTTLE_STATUS_LABELS,
@@ -14,6 +14,7 @@ import {
   type AromaTag,
   type Bottle,
   type BuyAgain,
+  type CatalogEntry,
   type TastingFull,
 } from '@/lib/types';
 
@@ -105,11 +106,12 @@ export function TastingForm({
     {}
   );
   const [whiskyId, setWhiskyId] = useState(initial?.whisky_id ?? defaultWhiskyId ?? '');
+  const [catalogEntry, setCatalogEntry] = useState<CatalogEntry | null>(null);
   const [nose, setNose] = useState<number | null>(initial?.nose_score ?? null);
   const [palate, setPalate] = useState<number | null>(initial?.palate_score ?? null);
   const [finish, setFinish] = useState<number | null>(initial?.finish_score ?? null);
 
-  const isNewWhisky = whiskyId === '__new__';
+  const isNewWhisky = whiskyId === '__catalog__';
   const whiskyBottles = useMemo(
     () => bottles.filter((b) => b.whisky_id === whiskyId),
     [bottles, whiskyId]
@@ -142,13 +144,22 @@ export function TastingForm({
                 {w.name}
               </option>
             ))}
-            {!isEdit && <option value="__new__">＋ 새 위스키 등록</option>}
+            {!isEdit && <option value="__catalog__">＋ 카탈로그에서 찾기</option>}
           </select>
         </Field>
 
         {isNewWhisky && (
           <div className="bg-tile-1 border border-hairline rounded-(--radius-card) p-4">
-            <WhiskyFields prefix="new_" />
+            <CatalogSearch onSelect={setCatalogEntry} autoFocus />
+            {catalogEntry && (
+              <p className="text-sm text-accent-bright mt-3">
+                선택됨: {catalogEntry.name}
+                <span className="text-muted">
+                  {catalogEntry.distillery ? ` · ${catalogEntry.distillery}` : ''}
+                </span>
+              </p>
+            )}
+            <input type="hidden" name="catalog_id" value={catalogEntry?.id ?? ''} />
           </div>
         )}
 
