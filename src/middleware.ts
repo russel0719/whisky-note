@@ -28,6 +28,25 @@ export async function middleware(request: NextRequest) {
 
   const isLoginPage = request.nextUrl.pathname.startsWith('/login');
 
+  // 비공개 서비스: 허용 목록 밖 계정은 세션이 있어도 로그아웃 후 차단
+  const allowedEmails = (process.env.ALLOWED_EMAILS ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (
+    user &&
+    allowedEmails.length > 0 &&
+    !allowedEmails.includes(user.email?.toLowerCase() ?? '')
+  ) {
+    await supabase.auth.signOut();
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.search = '?blocked=1';
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
+  }
+
   if (!user && !isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';

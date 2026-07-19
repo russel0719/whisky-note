@@ -8,10 +8,22 @@ export interface AuthState {
   message?: string;
 }
 
+/** ALLOWED_EMAILS(쉼표 구분)에 있는 이메일만 통과. 미설정이면 제한 없음. */
+function isAllowedEmail(email: string): boolean {
+  const allowed = (process.env.ALLOWED_EMAILS ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return allowed.length === 0 || allowed.includes(email.toLowerCase());
+}
+
+const PRIVATE_SERVICE_ERROR = '비공개 서비스입니다. 허용된 이메일로만 이용할 수 있습니다.';
+
 export async function signIn(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get('email') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   if (!email || !password) return { error: '이메일과 비밀번호를 입력해주세요.' };
+  if (!isAllowedEmail(email)) return { error: PRIVATE_SERVICE_ERROR };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -33,6 +45,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const email = String(formData.get('email') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   if (!email || !password) return { error: '이메일과 비밀번호를 입력해주세요.' };
+  if (!isAllowedEmail(email)) return { error: PRIVATE_SERVICE_ERROR };
   if (password.length < 8) return { error: '비밀번호는 8자 이상이어야 합니다.' };
 
   const supabase = await createClient();
