@@ -153,9 +153,9 @@ export function TastingForm({
             <CatalogSearch onSelect={setCatalogEntry} autoFocus />
             {catalogEntry && (
               <p className="text-sm text-accent-bright mt-3">
-                선택됨: {catalogEntry.name}
+                선택됨: {catalogEntry.name_ko ?? catalogEntry.name}
                 <span className="text-muted">
-                  {catalogEntry.distillery ? ` · ${catalogEntry.distillery}` : ''}
+                  {catalogEntry.name_ko ? ` · ${catalogEntry.name}` : ''}
                 </span>
               </p>
             )}

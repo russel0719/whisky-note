@@ -30,10 +30,10 @@ export default function NewWhiskyPage() {
 
         {selected && (
           <Card>
-            <p className="font-display text-[20px]">{selected.name}</p>
+            <p className="font-display text-[20px]">{selected.name_ko ?? selected.name}</p>
             <p className="text-sm text-muted mt-1">
               {[
-                selected.distillery,
+                selected.name_ko ? selected.name : selected.distillery,
                 selected.region ?? selected.country,
                 CATEGORY_LABELS[selected.category],
                 selected.age_years ? `${selected.age_years}년` : null,

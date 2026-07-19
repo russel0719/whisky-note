@@ -75,10 +75,11 @@ export async function createTasting(_prev: FormState, formData: FormData): Promi
       .maybeSingle();
     if (!entry) return { error: '카탈로그 항목을 찾지 못했습니다.' };
 
+    const displayName = entry.name_ko ?? entry.name;
     const { data: existing } = await supabase
       .from('whiskies')
       .select('id')
-      .ilike('name', entry.name)
+      .ilike('name', displayName)
       .maybeSingle();
     if (existing) {
       whiskyId = existing.id;
@@ -86,7 +87,7 @@ export async function createTasting(_prev: FormState, formData: FormData): Promi
       const { data, error } = await supabase
         .from('whiskies')
         .insert({
-          name: entry.name,
+          name: displayName,
           distillery: entry.distillery,
           category: entry.category,
           region: entry.region,

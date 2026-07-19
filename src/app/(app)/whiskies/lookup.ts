@@ -11,8 +11,8 @@ export async function searchCatalog(query: string): Promise<CatalogEntry[]> {
   const { data } = await supabase
     .from('catalog')
     .select('*')
-    .or(`name.ilike.%${cleaned}%,distillery.ilike.%${cleaned}%`)
-    .order('name')
+    .or(`name.ilike.%${cleaned}%,name_ko.ilike.%${cleaned}%,distillery.ilike.%${cleaned}%`)
+    .order('name_ko')
     .limit(12);
   return (data ?? []) as CatalogEntry[];
 }

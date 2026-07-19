@@ -55,14 +55,14 @@ export function CatalogSearch({
                 onClick={() => {
                   onSelect(entry);
                   setResults([]);
-                  setQuery(entry.name);
+                  setQuery(entry.name_ko ?? entry.name);
                 }}
                 className="w-full text-left px-3.5 py-2.5 hover:bg-tile-2"
               >
-                <p className="text-[15px] font-semibold">{entry.name}</p>
+                <p className="text-[15px] font-semibold">{entry.name_ko ?? entry.name}</p>
                 <p className="text-xs text-muted mt-0.5">
                   {[
-                    entry.distillery,
+                    entry.name_ko ? entry.name : null,
                     entry.region ?? entry.country,
                     CATEGORY_LABELS[entry.category],
                     entry.abv ? `${entry.abv}%` : null,

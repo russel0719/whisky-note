@@ -187,6 +187,7 @@ export interface Tasting {
 export interface CatalogEntry {
   id: string;
   name: string;
+  name_ko: string | null;
   distillery: string | null;
   category: Category;
   region: string | null;

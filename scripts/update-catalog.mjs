@@ -31,7 +31,7 @@ const BATCHES = [
 ];
 
 const SYSTEM = `너는 위스키 카탈로그 데이터 전문가다. 요청된 조건에 맞는 "실존이 확실한" 위스키 제품을 JSON 배열 하나로만 출력한다.
-각 항목: {"name": "정식 제품명(영문, 브랜드 포함)", "distillery": "증류소/브랜드", "region": "지역(한국어)" 또는 null, "abv": 도수 숫자 또는 null, "age_years": 숙성 연수 정수(NAS면 null), "cask_type": "캐스크(한국어)" 또는 null}
+각 항목: {"name": "정식 제품명(영문, 브랜드 포함)", "name_ko": "한국 통용 한글 표기 (예: 글렌피딕 12년)", "distillery": "증류소/브랜드", "region": "지역(한국어)" 또는 null, "abv": 도수 숫자 또는 null, "age_years": 숙성 연수 정수(NAS면 null), "cask_type": "캐스크(한국어)" 또는 null}
 규칙: 최대 25개. 존재가 불확실한 제품은 제외. JSON 배열 외 텍스트 금지.`;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -82,6 +82,7 @@ for (let i = 0; i < BATCHES.length; i++) {
     const rows = items
       .map((item) => ({
         name: clean(item?.name),
+        name_ko: clean(item?.name_ko),
         distillery: clean(item?.distillery),
         category: batch.category,
         region: clean(item?.region),

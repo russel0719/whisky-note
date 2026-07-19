@@ -57,17 +57,20 @@ export async function addWhiskyFromCatalog(formData: FormData): Promise<void> {
     .maybeSingle();
   if (!entry) return;
 
+  // 한글 표기를 기본 이름으로 사용
+  const displayName = entry.name_ko ?? entry.name;
+
   const { data: existing } = await supabase
     .from('whiskies')
     .select('id')
-    .ilike('name', entry.name)
+    .ilike('name', displayName)
     .maybeSingle();
   if (existing) redirect(`/whiskies/${existing.id}`);
 
   const { data: created, error } = await supabase
     .from('whiskies')
     .insert({
-      name: entry.name,
+      name: displayName,
       distillery: entry.distillery,
       category: entry.category,
       region: entry.region,
