@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
-import { EmptyState, Eyebrow } from '@/components/ui';
-import { BottleForm } from './bottle-form';
+import { Eyebrow } from '@/components/ui';
+import type { PickerWhisky } from '@/components/whisky-picker';
+import { BottleForm, type PriceHistory } from './bottle-form';
 
 export const metadata = { title: '구매 기록' };
 
@@ -11,8 +12,14 @@ export default async function NewBottlePage({
 }) {
   const { whisky } = await searchParams;
   const supabase = await createClient();
-  const { data } = await supabase.from('whiskies').select('id, name').order('name');
-  const whiskies = (data ?? []) as { id: string; name: string }[];
+  const [whiskiesRes, historyRes] = await Promise.all([
+    supabase.from('whiskies').select('id, name, catalog_id').order('name'),
+    supabase
+      .from('bottles')
+      .select('id, whisky_id, purchase_date, purchase_price, purchase_place')
+      .not('purchase_price', 'is', null),
+  ]);
+  const whiskies = (whiskiesRes.data ?? []) as PickerWhisky[];
 
   return (
     <div className="max-w-lg">
@@ -20,15 +27,11 @@ export default async function NewBottlePage({
         <Eyebrow>Purchase</Eyebrow>
         <h1 className="font-display text-[30px]">구매 기록</h1>
       </header>
-      {whiskies.length === 0 ? (
-        <EmptyState
-          message="먼저 위스키를 등록해주세요."
-          ctaHref="/whiskies/new"
-          ctaLabel="위스키 등록"
-        />
-      ) : (
-        <BottleForm whiskies={whiskies} defaultWhiskyId={whisky} />
-      )}
+      <BottleForm
+        whiskies={whiskies}
+        defaultWhiskyId={whisky}
+        priceHistory={(historyRes.data ?? []) as PriceHistory}
+      />
     </div>
   );
 }

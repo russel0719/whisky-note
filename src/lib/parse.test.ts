@@ -71,9 +71,9 @@ describe('parseTastingFields', () => {
     expect(parseTastingFields(form({ tasted_at: '2026-11-01', nose_score: '101' }))).toEqual({
       error: '점수는 0에서 100 사이여야 합니다.',
     });
-    expect(parseTastingFields(form({ tasted_at: '2026-11-01', overall_score: '-1' }))).toHaveProperty(
-      'error'
-    );
+    expect(
+      parseTastingFields(form({ tasted_at: '2026-11-01', overall_score: '-1' }))
+    ).toHaveProperty('error');
   });
 
   it('시음일이 없으면 에러', () => {
@@ -124,6 +124,22 @@ describe('parseTastingFields', () => {
     });
   });
 
+  it('따른 양은 보틀을 연결했을 때만 기록한다', () => {
+    const withBottle = parseTastingFields(
+      form({ tasted_at: '2026-11-01', bottle_id: 'b1', pour_ml: '30' })
+    );
+    const barTasting = parseTastingFields(form({ tasted_at: '2026-11-01', pour_ml: '30' }));
+    if ('error' in withBottle || 'error' in barTasting) throw new Error('unexpected error');
+    expect(withBottle.fields.pour_ml).toBe(30);
+    expect(barTasting.fields.pour_ml).toBeNull();
+  });
+
+  it.each(['0', '1001', '12.5'])('따른 양 %s ml는 에러', (pour) => {
+    expect(
+      parseTastingFields(form({ tasted_at: '2026-11-01', bottle_id: 'b1', pour_ml: pour }))
+    ).toHaveProperty('error');
+  });
+
   it('초기 버전의 컬러 key 저장값을 그대로 받는다', () => {
     const parsed = parseTastingFields(form({ tasted_at: '2026-11-01', color: 'amber' }));
     if ('error' in parsed) throw new Error(parsed.error);
@@ -148,7 +164,9 @@ describe('parseWhiskyFields', () => {
 
   it('이름이 없거나 분류가 잘못되면 에러', () => {
     expect(parseWhiskyFields(form({ name: '', category: 'single_malt' }))).toHaveProperty('error');
-    expect(parseWhiskyFields(form({ name: '라프로익', category: 'vodka' }))).toHaveProperty('error');
+    expect(parseWhiskyFields(form({ name: '라프로익', category: 'vodka' }))).toHaveProperty(
+      'error'
+    );
   });
 
   it('prefix가 붙은 필드명을 읽는다', () => {

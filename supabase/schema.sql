@@ -11,8 +11,12 @@
 --   aroma_tags      아로마 휠 태그 마스터 (공용, 읽기 전용)
 --   tasting_aromas  시음 ↔ 아로마 태그 M:N
 --   catalog         글로벌 위스키 카탈로그 (공용, 읽기 전용)
+--   wishlist        위시리스트 (카탈로그 항목 / 내 위스키 / 이름만)
+--   flights         플라이트(비교·블라인드 시음 세션). 잔 = tastings.flight_id
 --
--- 함수: ensure_whisky_from_catalog(catalog_id), save_tasting(tasting jsonb, tag_ids, id)
+-- 함수: ensure_whisky_from_catalog(catalog_id), save_tasting(tasting jsonb, aromas jsonb, id),
+--       search_catalog(query, limit), import_tastings(rows jsonb)
+-- 확장: pg_trgm (extensions 스키마, 카탈로그 오타 검색)
 --
 -- 적용 후 수동 단계: Supabase 대시보드 > Settings > API > Exposed schemas 에
 -- whisky_note 를 추가해야 PostgREST로 접근 가능하다.

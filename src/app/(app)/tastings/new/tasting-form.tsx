@@ -1,12 +1,14 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
+import { getLastTasting, type LastTasting } from '../lookup';
 import { createTasting, updateTasting, type FormState } from '../actions';
 import { AromaWheelPicker } from '@/components/aroma-wheel';
-import { CatalogSearch } from '@/components/catalog-search';
 import { ColorBarPicker } from '@/components/color-bar';
 import { Field, inputClass, SubmitButton, textareaClass } from '@/components/form';
 import { PhotoInput } from '@/components/photo-input';
+import { WhiskyPicker, type PickerWhisky } from '@/components/whisky-picker';
+import { scoreTextClass } from '@/components/ui';
 import { averageScore, formatDate, formatOpenAge } from '@/lib/format';
 import { ChoiceChips } from '@/components/choice-chips';
 import {
@@ -63,9 +65,7 @@ function ScoreRow({
             placeholder="—"
             onChange={(e) =>
               onChange(
-                e.target.value === ''
-                  ? null
-                  : Math.max(0, Math.min(100, Number(e.target.value)))
+                e.target.value === '' ? null : Math.max(0, Math.min(100, Number(e.target.value)))
               )
             }
             className="w-16 h-9 px-2 text-center rounded-(--radius-utility) bg-tile-1 border border-hairline text-accent-bright font-semibold tabular-nums text-[16px]"
@@ -96,10 +96,105 @@ function ScoreRow({
   );
 }
 
+export interface FlightContext {
+  id: string;
+  name: string;
+  blind: boolean;
+  tasted_at: string;
+  location: string | null;
+  /** 새 잔의 번호 */
+  position: number;
+}
+
 function stageTagIds(initial: TastingFull | undefined, stage: AromaStage): number[] {
   return (initial?.tasting_aromas ?? [])
     .filter((row) => row.stage === stage)
     .map((row) => row.aroma_tags.id);
+}
+
+const POUR_PRESETS = [15, 30, 45, 60];
+
+/** 따른 양 — 저장하면 연결한 보틀의 잔량에서 차감된다 */
+function PourInput({ defaultValue, bottle }: { defaultValue: number | null; bottle?: Bottle }) {
+  const [pour, setPour] = useState(defaultValue != null ? String(defaultValue) : '');
+  const pct = bottle && pour ? Math.round((Number(pour) * 100) / bottle.size_ml) : null;
+  return (
+    <div>
+      <label htmlFor="pour_ml" className="text-sm text-muted">
+        따른 양 <span className="text-faint text-xs">(입력하면 보틀 잔량에서 차감)</span>
+      </label>
+      <div className="flex flex-wrap items-center gap-2 mt-1.5">
+        {POUR_PRESETS.map((ml) => (
+          <button
+            key={ml}
+            type="button"
+            aria-pressed={pour === String(ml)}
+            onClick={() => setPour(pour === String(ml) ? '' : String(ml))}
+            className={`h-9 px-3.5 rounded-full border text-sm active:scale-95 ${
+              pour === String(ml)
+                ? 'border-accent text-accent-bright bg-accent/10'
+                : 'border-hairline text-muted'
+            }`}
+          >
+            {ml}ml
+          </button>
+        ))}
+        <input
+          id="pour_ml"
+          name="pour_ml"
+          type="number"
+          min={1}
+          max={1000}
+          inputMode="numeric"
+          value={pour}
+          onChange={(e) => setPour(e.target.value)}
+          placeholder="ml"
+          className={`${inputClass} !w-24`}
+        />
+      </div>
+      {bottle && (
+        <p className="text-xs text-faint mt-2">
+          {bottle.status === 'unopened' && '미개봉 보틀 — 저장하면 시음일로 개봉 처리됩니다. '}
+          {pct != null && Number.isFinite(pct)
+            ? `잔량 약 ${pct}%p 차감 (${bottle.size_ml}ml 기준)`
+            : ''}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** 같은 위스키의 직전 기록 — 다시 마실 때 비교 기준 */
+function LastTastingCard({ whiskyId }: { whiskyId: string }) {
+  const [last, setLast] = useState<{ whiskyId: string; data: LastTasting | null } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getLastTasting(whiskyId).then((data) => {
+      if (!cancelled) setLast({ whiskyId, data });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [whiskyId]);
+  const data = last?.whiskyId === whiskyId ? last.data : null;
+  if (!data) return null;
+  return (
+    <div className="bg-tile-1 border border-hairline rounded-(--radius-card) p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-faint">지난 기록 · {formatDate(data.tasted_at)}</p>
+        {data.score != null && (
+          <p className={`font-display text-[22px] tabular-nums ${scoreTextClass(data.score)}`}>
+            {data.score}
+          </p>
+        )}
+      </div>
+      {data.descriptors && <p className="text-sm text-muted mt-1">{data.descriptors}</p>}
+      {data.aromas.length > 0 && (
+        <p className="text-sm text-accent-bright mt-1">{data.aromas.join(' · ')}</p>
+      )}
+      {data.comment && <p className="text-sm mt-2 line-clamp-2">{data.comment}</p>}
+    </div>
+  );
 }
 
 function StageBlock({ children }: { children: React.ReactNode }) {
@@ -145,13 +240,18 @@ export function TastingForm({
   aromaTags,
   defaultWhiskyId,
   defaultBottleId,
+  defaultCatalog,
+  flight,
   initial,
 }: {
-  whiskies: { id: string; name: string }[];
+  whiskies: PickerWhisky[];
   bottles: Bottle[];
   aromaTags: AromaTag[];
   defaultWhiskyId?: string;
   defaultBottleId?: string;
+  defaultCatalog?: CatalogEntry | null;
+  /** 플라이트의 잔으로 기록할 때 (새 잔이면 position은 다음 번호) */
+  flight?: FlightContext | null;
   initial?: TastingFull;
 }) {
   const isEdit = initial != null;
@@ -160,66 +260,85 @@ export function TastingForm({
     {}
   );
   const [whiskyId, setWhiskyId] = useState(initial?.whisky_id ?? defaultWhiskyId ?? '');
-  const [catalogEntry, setCatalogEntry] = useState<CatalogEntry | null>(null);
+  const [bottleId, setBottleId] = useState(initial?.bottle_id ?? defaultBottleId ?? '');
   const [nose, setNose] = useState<number | null>(initial?.nose_score ?? null);
   const [palate, setPalate] = useState<number | null>(initial?.palate_score ?? null);
   const [finish, setFinish] = useState<number | null>(initial?.finish_score ?? null);
 
-  const isNewWhisky = whiskyId === '__catalog__';
   const whiskyBottles = useMemo(
     () => bottles.filter((b) => b.whisky_id === whiskyId),
     [bottles, whiskyId]
   );
   const suggested = averageScore(nose, palate, finish);
+
+  const flightId = initial?.flight_id ?? flight?.id ?? null;
+  const flightPosition = initial?.flight_position ?? flight?.position ?? null;
+  const isBlindFlight = flight?.blind ?? false;
+  // 위스키를 아직 모르는(공개 전) 블라인드 잔 — 새 잔이거나, 편집 중인데 위스키가 비어 있음
+  const blindGlass = isBlindFlight && !isEdit;
+  // 공개 후 편집할 때도 추측은 보존
+  const savedGuess = initial?.blind_guess ?? null;
   const legacyTags = useMemo(() => stageTagIds(initial, 'overall'), [initial]);
 
   return (
     <form action={action} className="space-y-8">
       {isEdit && <input type="hidden" name="id" value={initial.id} />}
+      {flightId && (
+        <>
+          <input type="hidden" name="flight_id" value={flightId} />
+          <input type="hidden" name="flight_position" value={flightPosition ?? ''} />
+        </>
+      )}
 
       <section className="space-y-4">
-        <Field label="위스키" htmlFor="whisky_id" required>
-          <select
-            id="whisky_id"
-            name="whisky_id"
-            required
-            value={whiskyId}
-            onChange={(e) => setWhiskyId(e.target.value)}
-            className={inputClass}
-          >
-            <option value="" disabled>
-              선택
-            </option>
-            {whiskies.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-            {!isEdit && <option value="__catalog__">＋ 카탈로그에서 찾기</option>}
-          </select>
-        </Field>
+        {flight && (
+          <p className="text-sm text-accent-bright">
+            {flight.name} · {flightPosition}번 잔{blindGlass ? ' · 블라인드' : ''}
+          </p>
+        )}
 
-        {isNewWhisky && (
-          <div className="bg-tile-1 border border-hairline rounded-(--radius-card) p-4">
-            <CatalogSearch onSelect={setCatalogEntry} autoFocus />
-            {catalogEntry && (
-              <p className="text-sm text-accent-bright mt-3">
-                선택됨: {catalogEntry.name_ko ?? catalogEntry.name}
-                <span className="text-muted">
-                  {catalogEntry.name_ko ? ` · ${catalogEntry.name}` : ''}
-                </span>
-              </p>
+        {blindGlass ? (
+          <Field label="추측 (선택)" htmlFor="blind_guess">
+            <input
+              id="blind_guess"
+              name="blind_guess"
+              className={inputClass}
+              placeholder="예: 아일라 피트, 셰리 캐스크 10년 이상"
+            />
+          </Field>
+        ) : (
+          <div>
+            <p className="text-sm text-muted mb-1.5">
+              위스키 {!isBlindFlight && <span className="text-accent">*</span>}
+            </p>
+            <WhiskyPicker
+              whiskies={whiskies}
+              defaultWhiskyId={initial?.whisky_id ?? defaultWhiskyId}
+              defaultCatalog={defaultCatalog}
+              allowCreate={!isEdit}
+              onChange={(id) => {
+                setWhiskyId(id ?? '');
+                setBottleId('');
+              }}
+            />
+            {savedGuess && (
+              <>
+                <p className="text-xs text-faint mt-2">블라인드 추측: {savedGuess}</p>
+                <input type="hidden" name="blind_guess" value={savedGuess} />
+              </>
             )}
-            <input type="hidden" name="catalog_id" value={catalogEntry?.id ?? ''} />
           </div>
         )}
 
-        {!isNewWhisky && whiskyBottles.length > 0 && (
-          <Field label="보틀 연결 (개봉 경과 추적)" htmlFor="bottle_id">
+        {!isEdit && whiskyId && !blindGlass && <LastTastingCard whiskyId={whiskyId} />}
+
+        {!blindGlass && whiskyBottles.length > 0 && (
+          <Field label="보틀 연결 (개봉 경과 · 잔량 추적)" htmlFor="bottle_id">
             <select
               id="bottle_id"
               name="bottle_id"
-              defaultValue={initial?.bottle_id ?? defaultBottleId ?? ''}
+              value={bottleId}
+              onChange={(e) => setBottleId(e.target.value)}
               className={inputClass}
             >
               <option value="">보틀 없이 (바 · 모임 시음)</option>
@@ -227,10 +346,18 @@ export function TastingForm({
                 <option key={b.id} value={b.id}>
                   {formatDate(b.purchase_date)} 구매 · {BOTTLE_STATUS_LABELS[b.status]}
                   {formatOpenAge(b.open_date) ? ` · ${formatOpenAge(b.open_date)}` : ''}
+                  {b.status !== 'unopened' ? ` · 잔량 ${b.remaining_pct}%` : ''}
                 </option>
               ))}
             </select>
           </Field>
+        )}
+
+        {bottleId && (
+          <PourInput
+            defaultValue={initial?.pour_ml ?? null}
+            bottle={whiskyBottles.find((b) => b.id === bottleId)}
+          />
         )}
 
         <div className="grid grid-cols-2 gap-3">
@@ -240,7 +367,7 @@ export function TastingForm({
               name="tasted_at"
               type="date"
               required
-              defaultValue={initial?.tasted_at?.slice(0, 10) ?? today()}
+              defaultValue={initial?.tasted_at?.slice(0, 10) ?? flight?.tasted_at ?? today()}
               className={inputClass}
             />
           </Field>
@@ -248,7 +375,7 @@ export function TastingForm({
             <input
               id="location"
               name="location"
-              defaultValue={initial?.location ?? ''}
+              defaultValue={initial?.location ?? flight?.location ?? ''}
               className={inputClass}
               placeholder="예: 집, OO바"
             />

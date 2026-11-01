@@ -29,8 +29,7 @@ export function parseWhiskyFields(formData: FormData, prefix = '') {
   const name = String(formData.get(`${prefix}name`) ?? '').trim();
   const category = String(formData.get(`${prefix}category`) ?? '');
   if (!name) return { error: '위스키 이름을 입력해주세요.' as const };
-  if (!CATEGORIES.includes(category as Category))
-    return { error: '분류를 선택해주세요.' as const };
+  if (!CATEGORIES.includes(category as Category)) return { error: '분류를 선택해주세요.' as const };
   return {
     fields: {
       name,
@@ -61,7 +60,10 @@ function parseChoice<T extends string>(
 }
 
 /** 복수 선택값 — 허용 키만 중복 없이 */
-function parseChoices<T extends string>(values: FormDataEntryValue[], options: Record<T, string>): T[] {
+function parseChoices<T extends string>(
+  values: FormDataEntryValue[],
+  options: Record<T, string>
+): T[] {
   return [...new Set(values.map(String))].filter((s): s is T => Object.hasOwn(options, s));
 }
 
@@ -83,12 +85,20 @@ export function parseTastingFields(formData: FormData) {
   const tastedAt = String(formData.get('tasted_at') ?? '').trim();
   if (!tastedAt) return { error: '시음일을 입력해주세요.' as const };
 
+  const bottleId = parseOptionalText(formData.get('bottle_id'));
+  const pour = parseOptionalNumber(formData.get('pour_ml'));
+  if (pour != null && (!Number.isInteger(pour) || pour < 1 || pour > 1000)) {
+    return { error: '따른 양은 1–1000ml 사이의 정수로 입력해주세요.' as const };
+  }
+
   const buyAgain = String(formData.get('would_buy_again') ?? '');
   const color = String(formData.get('color') ?? '');
 
   return {
     fields: {
-      bottle_id: parseOptionalText(formData.get('bottle_id')),
+      bottle_id: bottleId,
+      // 바 시음(보틀 없음)에서는 따른 양을 기록하지 않는다
+      pour_ml: bottleId ? pour : null,
       tasted_at: tastedAt,
       location: parseOptionalText(formData.get('location')),
       ...(scores as Record<string, number | null>),
@@ -106,9 +116,11 @@ export function parseTastingFields(formData: FormData) {
       pairing: parseOptionalText(formData.get('pairing')),
       would_buy_again: ['yes', 'no', 'maybe'].includes(buyAgain) ? buyAgain : null,
       price_paid: parseOptionalNumber(formData.get('price_paid')),
-      color:
-        HEX_COLOR_RE.test(color) || WHISKY_COLORS.some((c) => c.key === color) ? color : null,
+      color: HEX_COLOR_RE.test(color) || WHISKY_COLORS.some((c) => c.key === color) ? color : null,
       photo_url: parseOptionalText(formData.get('photo_url')),
+      flight_id: parseOptionalText(formData.get('flight_id')),
+      flight_position: parseOptionalNumber(formData.get('flight_position')),
+      blind_guess: parseOptionalText(formData.get('blind_guess')),
     },
     aromas: AROMA_FIELD_STAGES.flatMap((stage) =>
       [...new Set(formData.getAll(`aroma_${stage}`).map(Number))]

@@ -20,6 +20,7 @@ import {
 } from '@/lib/types';
 import { ConfirmForm } from '@/components/confirm-form';
 import { deleteTasting } from '../actions';
+import { ShareCardButton } from './share-button';
 
 function Chip({ children, accent }: { children: React.ReactNode; accent?: boolean }) {
   return (
@@ -74,11 +75,7 @@ function NoteBlock({
   );
 }
 
-export default async function TastingDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function TastingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
   const { data } = await supabase
@@ -102,15 +99,26 @@ export default async function TastingDetailPage({
       .map((row) => row.aroma_tags)
       .filter(Boolean);
   const aromas = aromasOf('overall');
+  const whisky = tasting.whiskies;
+  const title = whisky?.name ?? `블라인드 ${tasting.flight_position ?? ''}번 잔`;
 
   return (
     <div className="space-y-8">
       <header>
         <Eyebrow>{formatDate(tasting.tasted_at)}</Eyebrow>
         <div className="flex items-start justify-between gap-4">
-          <Link href={`/whiskies/${tasting.whisky_id}`} className="hover:text-accent-bright min-w-0">
-            <h1 className="font-display text-[30px] leading-tight">{tasting.whiskies.name}</h1>
-          </Link>
+          {whisky ? (
+            <Link href={`/whiskies/${whisky.id}`} className="hover:text-accent-bright min-w-0">
+              <h1 className="font-display text-[30px] leading-tight">{title}</h1>
+            </Link>
+          ) : (
+            <div className="min-w-0">
+              <h1 className="font-display text-[30px] leading-tight">{title}</h1>
+              <p className="text-sm text-muted mt-1">
+                공개 전{tasting.blind_guess ? ` · 추측: ${tasting.blind_guess}` : ''}
+              </p>
+            </div>
+          )}
           <div className="shrink-0">
             <ScoreDial
               value={overall}
@@ -120,7 +128,14 @@ export default async function TastingDetailPage({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-3 text-sm text-muted">
-          <CategoryBadge category={tasting.whiskies.category} />
+          {whisky && <CategoryBadge category={whisky.category} />}
+          {tasting.flight_id && (
+            <Link href={`/flights/${tasting.flight_id}`} className="text-accent-bright">
+              플라이트 {tasting.flight_position}번 잔
+            </Link>
+          )}
+          {whisky && tasting.blind_guess && <span>블라인드 추측: {tasting.blind_guess}</span>}
+          {tasting.source_score != null && <span>가져온 기록 (원점수 {tasting.source_score})</span>}
           {tasting.serve && <span>{SERVES[tasting.serve]}</span>}
           {tasting.location && <span>{tasting.location}</span>}
           {openAge ? (
@@ -137,7 +152,7 @@ export default async function TastingDetailPage({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={tasting.photo_url}
-          alt={`${tasting.whiskies.name} 시음 사진`}
+          alt={`${title} 시음 사진`}
           className="w-full max-h-80 object-cover rounded-(--radius-card) border border-hairline"
         />
       )}
@@ -224,12 +239,26 @@ export default async function TastingDetailPage({
           >
             수정
           </Link>
-          <Link
-            href={`/tastings/new?whisky=${tasting.whisky_id}`}
-            className="h-9 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
-          >
-            이 위스키 다시 기록
-          </Link>
+          {whisky && (
+            <Link
+              href={`/tastings/new?whisky=${whisky.id}`}
+              className="h-9 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
+            >
+              이 위스키 다시 기록
+            </Link>
+          )}
+          {tasting.flight_id && (
+            <Link
+              href={`/flights/${tasting.flight_id}`}
+              className="h-9 px-4 inline-flex items-center rounded-full border border-hairline text-muted text-sm"
+            >
+              플라이트로
+            </Link>
+          )}
+          <ShareCardButton
+            tastingId={tasting.id}
+            fileName={`${title} ${tasting.tasted_at.slice(0, 10)}`}
+          />
         </div>
         <ConfirmForm action={deleteTasting} message="이 시음 노트를 삭제할까요?">
           <input type="hidden" name="id" value={tasting.id} />

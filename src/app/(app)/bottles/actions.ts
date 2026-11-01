@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { parseOptionalNumber, parseOptionalText } from '@/lib/parse';
+import { resolveWhiskyId } from '@/lib/whisky-resolve';
 
 export interface FormState {
   error?: string;
@@ -15,8 +16,7 @@ function revalidateBottleViews() {
 }
 
 export async function createBottle(_prev: FormState, formData: FormData): Promise<FormState> {
-  const whiskyId = String(formData.get('whisky_id') ?? '');
-  if (!whiskyId) return { error: '위스키를 선택해주세요.' };
+  if (!formData.get('whisky_id')) return { error: '위스키를 선택해주세요.' };
 
   const purchaseDate = String(formData.get('purchase_date') ?? '').trim();
   if (!purchaseDate) return { error: '구매일을 입력해주세요.' };
@@ -24,8 +24,12 @@ export async function createBottle(_prev: FormState, formData: FormData): Promis
   const openDate = parseOptionalText(formData.get('open_date'));
 
   const supabase = await createClient();
+  // 카탈로그 항목·직접 입력이면 여기서 내 위스키로 등록
+  const whisky = await resolveWhiskyId(supabase, formData);
+  if ('error' in whisky) return { error: whisky.error };
+
   const { error } = await supabase.from('bottles').insert({
-    whisky_id: whiskyId,
+    whisky_id: whisky.id,
     purchase_date: purchaseDate,
     purchase_price: parseOptionalNumber(formData.get('purchase_price')),
     purchase_place: parseOptionalText(formData.get('purchase_place')),
@@ -36,13 +40,14 @@ export async function createBottle(_prev: FormState, formData: FormData): Promis
   if (error) return { error: `저장에 실패했습니다: ${error.message}` };
 
   revalidateBottleViews();
+  revalidatePath('/whiskies');
   redirect('/bottles');
 }
 
 export async function updateBottle(_prev: FormState, formData: FormData): Promise<FormState> {
   const id = String(formData.get('id') ?? '');
   const whiskyId = String(formData.get('whisky_id') ?? '');
-  if (!id || !whiskyId) return { error: '잘못된 요청입니다.' };
+  if (!id || !whiskyId || whiskyId.startsWith('__')) return { error: '잘못된 요청입니다.' };
 
   const purchaseDate = String(formData.get('purchase_date') ?? '').trim();
   if (!purchaseDate) return { error: '구매일을 입력해주세요.' };

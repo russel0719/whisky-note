@@ -1,27 +1,49 @@
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { AromaRadar, MonthlyBars, PriceScatter } from '@/components/charts';
-import { Card, EmptyState, PageHeader, scoreTextClass, SectionTitle } from '@/components/ui';
-import { averageScore, formatKrw } from '@/lib/format';
+import {
+  Card,
+  EmptyState,
+  PageHeader,
+  ScoreBars,
+  scoreTextClass,
+  SectionTitle,
+} from '@/components/ui';
+import { formatKrw } from '@/lib/format';
+import { averageBy, recommendFromCatalog, type LikedWhisky } from '@/lib/insights';
 import {
   AROMA_GROUP_LABELS,
   CATEGORY_LABELS,
+  PALATE_BODIES,
+  SERVES,
   type AromaGroup,
   type Bottle,
+  type CatalogEntry,
   type Category,
+  type PalateBody,
+  type Serve,
 } from '@/lib/types';
+import { addWishlistFromCatalog } from '../wishlist/actions';
 
 export const metadata = { title: '통계' };
 
 interface TastingRow {
   id: string;
+  whisky_id: string;
   bottle_id: string | null;
   tasted_at: string;
   price_paid: number | null;
-  nose_score: number | null;
-  palate_score: number | null;
-  finish_score: number | null;
-  overall_score: number | null;
-  whiskies: { name: string; category: Category } | null;
+  score: number | null;
+  serve: Serve | null;
+  palate_body: PalateBody | null;
+  whiskies: {
+    name: string;
+    category: Category;
+    distillery: string | null;
+    region: string | null;
+    cask_type: string | null;
+    catalog_id: string | null;
+  } | null;
 }
 
 function monthKey(iso: string): string {
@@ -31,15 +53,19 @@ function monthKey(iso: string): string {
 export default async function StatsPage() {
   const supabase = await createClient();
 
-  const [tastingsRes, bottlesRes, aromaRes] = await Promise.all([
-    supabase
-      .from('tastings')
-      .select(
-        'id, bottle_id, tasted_at, price_paid, nose_score, palate_score, finish_score, overall_score, whiskies(name, category)'
-      ),
-    supabase.from('bottles').select('*'),
-    supabase.from('tasting_aromas').select('tasting_id, tag_id, aroma_tags(grp)'),
-  ]);
+  const [tastingsRes, bottlesRes, aromaRes, catalogRes, myWhiskiesRes, wishlistRes] =
+    await Promise.all([
+      supabase
+        .from('tastings')
+        .select(
+          'id, whisky_id, bottle_id, tasted_at, price_paid, score, serve, palate_body, whiskies(name, category, distillery, region, cask_type, catalog_id)'
+        ),
+      supabase.from('bottles').select('*'),
+      supabase.from('tasting_aromas').select('tasting_id, tag_id, aroma_tags(grp)'),
+      supabase.from('catalog').select('*'),
+      supabase.from('whiskies').select('catalog_id').not('catalog_id', 'is', null),
+      supabase.from('wishlist').select('catalog_id').not('catalog_id', 'is', null),
+    ]);
 
   const tastings = (tastingsRes.data ?? []) as unknown as TastingRow[];
   const bottles = (bottlesRes.data ?? []) as Bottle[];
@@ -58,45 +84,79 @@ export default async function StatsPage() {
           ctaHref="/tastings/new"
           ctaLabel="첫 노트 작성"
         />
+        <p className="text-sm text-muted text-center mt-4">
+          메모로 남긴 과거 기록이 있다면{' '}
+          <Link href="/import" className="text-accent-bright underline underline-offset-4">
+            가져오기
+          </Link>
+        </p>
       </div>
     );
   }
 
-  const scoreOf = (t: TastingRow) =>
-    t.overall_score ?? averageScore(t.nose_score, t.palate_score, t.finish_score);
+  const scoreOf = (t: TastingRow) => t.score;
 
   // 아로마 프로필 (9그룹)
   // 같은 노트에서 여러 단계에 고른 태그는 한 번만 센다
   const groupCounts = new Map<AromaGroup, number>();
   const seenAroma = new Set<string>();
+  const tastingGroups: { tasting_id: string; grp: AromaGroup }[] = [];
+  const seenGroup = new Set<string>();
   for (const row of aromaRows) {
     const grp = row.aroma_tags?.grp;
     const key = `${row.tasting_id}:${row.tag_id}`;
     if (!grp || seenAroma.has(key)) continue;
     seenAroma.add(key);
     groupCounts.set(grp, (groupCounts.get(grp) ?? 0) + 1);
+    if (!seenGroup.has(`${row.tasting_id}:${grp}`)) {
+      seenGroup.add(`${row.tasting_id}:${grp}`);
+      tastingGroups.push({ tasting_id: row.tasting_id, grp });
+    }
   }
+
+  // 향 그룹별 평균 점수 — "어떤 향이 날 때 점수를 높게 줬나" (노트 2개 이상인 그룹만)
+  const scoreByTasting = new Map(tastings.map((t) => [t.id, t.score]));
+  const aromaScoreStats = averageBy(
+    tastingGroups,
+    (row) => row.grp,
+    (row) => scoreByTasting.get(row.tasting_id),
+    2
+  );
   const radarData = (Object.keys(AROMA_GROUP_LABELS) as AromaGroup[]).map((grp) => ({
     label: AROMA_GROUP_LABELS[grp],
     value: groupCounts.get(grp) ?? 0,
   }));
   const hasAroma = radarData.some((d) => d.value > 0);
 
-  // 분류별 평균 점수
-  const byCategory = new Map<Category, number[]>();
+  // 분류·마신 방식·바디·증류소별 평균 점수
+  const categoryStats = averageBy(tastings, (t) => t.whiskies?.category, scoreOf);
+  const serveStats = averageBy(tastings, (t) => t.serve, scoreOf);
+  const bodyStats = averageBy(tastings, (t) => t.palate_body, scoreOf);
+  const distilleryStats = averageBy(tastings, (t) => t.whiskies?.distillery, scoreOf).slice(0, 6);
+
+  // 취향 기반 추천 — 위스키별 최고점 상위 5개(80점 이상)를 기준으로 카탈로그에서 고른다
+  const bestByWhisky = new Map<string, LikedWhisky>();
   for (const t of tastings) {
-    const category = t.whiskies?.category;
-    const score = scoreOf(t);
-    if (!category || score == null) continue;
-    byCategory.set(category, [...(byCategory.get(category) ?? []), score]);
+    if (t.score == null || !t.whiskies) continue;
+    const prev = bestByWhisky.get(t.whisky_id);
+    if (!prev || t.score > prev.score) {
+      bestByWhisky.set(t.whisky_id, { ...t.whiskies, score: t.score });
+    }
   }
-  const categoryStats = [...byCategory.entries()]
-    .map(([category, scores]) => ({
-      category,
-      avg: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
-      count: scores.length,
-    }))
-    .sort((a, b) => b.avg - a.avg);
+  const liked = [...bestByWhisky.values()]
+    .filter((w) => w.score >= 80)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+  const excludeCatalog = new Set(
+    [...(myWhiskiesRes.data ?? []), ...(wishlistRes.data ?? [])].map(
+      (row) => (row as { catalog_id: string }).catalog_id
+    )
+  );
+  const recommendations = recommendFromCatalog(
+    liked,
+    (catalogRes.data ?? []) as CatalogEntry[],
+    excludeCatalog
+  );
 
   // 월별 지출/시음 (최근 12개월)
   const now = new Date();
@@ -171,7 +231,18 @@ export default async function StatsPage() {
 
   return (
     <div className="space-y-10">
-      <PageHeader eyebrow="Insights" title="통계" />
+      <PageHeader
+        eyebrow="Insights"
+        title="통계"
+        action={
+          <Link
+            href="/report"
+            className="h-10 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
+          >
+            연간 리포트
+          </Link>
+        }
+      />
 
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card className="!p-4 flex sm:flex-col items-baseline sm:items-center justify-between sm:justify-center sm:text-center gap-1">
@@ -209,31 +280,76 @@ export default async function StatsPage() {
         {categoryStats.length > 0 && (
           <section>
             <SectionTitle>분류별 평균 점수</SectionTitle>
-            <Card className="space-y-3">
-              {categoryStats.map(({ category, avg, count }) => (
-                <div key={category} className="flex items-center gap-3">
-                  <span className="text-sm text-muted w-24 shrink-0">
-                    {CATEGORY_LABELS[category]}
-                  </span>
-                  <div className="flex-1 h-2 rounded-full bg-tile-2 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-accent"
-                      style={{ width: `${avg}%` }}
-                      title={`${CATEGORY_LABELS[category]}: 평균 ${avg}점 (${count}회)`}
-                    />
-                  </div>
-                  <span className={`text-sm tabular-nums w-8 text-right ${scoreTextClass(avg)}`}>
-                    {avg}
-                  </span>
-                  <span className="text-xs text-faint tabular-nums w-8 text-right">
-                    {count}회
-                  </span>
-                </div>
-              ))}
-            </Card>
+            <ScoreBars rows={categoryStats.map((r) => ({ ...r, label: CATEGORY_LABELS[r.key] }))} />
+          </section>
+        )}
+
+        {aromaScoreStats.length > 0 && (
+          <section>
+            <SectionTitle>향과 점수</SectionTitle>
+            <p className="text-xs text-muted -mt-2 mb-3">그 향을 고른 노트의 평균 점수</p>
+            <ScoreBars
+              rows={aromaScoreStats.map((r) => ({ ...r, label: AROMA_GROUP_LABELS[r.key] }))}
+            />
+          </section>
+        )}
+
+        {distilleryStats.length > 0 && (
+          <section>
+            <SectionTitle>증류소별 평균 점수</SectionTitle>
+            <ScoreBars rows={distilleryStats.map((r) => ({ ...r, label: r.key }))} />
+          </section>
+        )}
+
+        {serveStats.length > 0 && (
+          <section>
+            <SectionTitle>마신 방식별 평균 점수</SectionTitle>
+            <ScoreBars rows={serveStats.map((r) => ({ ...r, label: SERVES[r.key] }))} />
+          </section>
+        )}
+
+        {bodyStats.length > 0 && (
+          <section>
+            <SectionTitle>바디별 평균 점수</SectionTitle>
+            <ScoreBars
+              rows={bodyStats.map((r) => ({ ...r, label: `${PALATE_BODIES[r.key]} 바디` }))}
+            />
           </section>
         )}
       </div>
+
+      {recommendations.length > 0 && (
+        <section>
+          <SectionTitle>취향 기반 추천</SectionTitle>
+          <p className="text-xs text-muted -mt-2 mb-3">
+            높은 점수를 준 위스키와 증류소·지역·캐스크가 겹치는, 아직 기록하지 않은 위스키
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            {recommendations.map(({ entry, reason }) => (
+              <Card key={entry.id} className="!p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{entry.name_ko ?? entry.name}</p>
+                  <p className="text-xs text-muted mt-0.5 truncate">
+                    {[entry.region ?? entry.country, CATEGORY_LABELS[entry.category]]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                  <p className="text-xs text-accent mt-1">{reason}</p>
+                </div>
+                <form action={addWishlistFromCatalog} className="shrink-0">
+                  <input type="hidden" name="catalog_id" value={entry.id} />
+                  <button
+                    type="submit"
+                    className="h-9 px-3.5 rounded-full border border-accent text-accent-bright text-sm"
+                  >
+                    + 위시
+                  </button>
+                </form>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
       {scatterPoints.length >= 2 && (
         <section>
@@ -266,6 +382,33 @@ export default async function StatsPage() {
         <SectionTitle>월별 시음 횟수</SectionTitle>
         <Card>
           <MonthlyBars data={countData} format={(v) => `${v}회`} />
+        </Card>
+      </section>
+
+      <section>
+        <SectionTitle>데이터 내보내기</SectionTitle>
+        <Card className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted">
+            백업이나 스프레드시트 분석용으로 기록을 내려받습니다. 메모로 남긴 과거 기록은{' '}
+            <Link href="/import" className="text-accent-bright underline underline-offset-4">
+              가져오기
+            </Link>
+            로 옮길 수 있습니다.
+          </p>
+          <div className="flex gap-2">
+            <a
+              href="/export?format=csv"
+              className="h-10 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
+            >
+              시음 노트 CSV
+            </a>
+            <a
+              href="/export?format=json"
+              className="h-10 px-4 inline-flex items-center rounded-full border border-hairline text-muted text-sm"
+            >
+              전체 JSON
+            </a>
+          </div>
         </Card>
       </section>
     </div>

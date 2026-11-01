@@ -236,7 +236,8 @@ export interface Bottle {
 export interface Tasting {
   id: string;
   user_id: string;
-  whisky_id: string;
+  /** 공개 전 블라인드 잔(flight_id 있음)만 null */
+  whisky_id: string | null;
   bottle_id: string | null;
   tasted_at: string;
   location: string | null;
@@ -244,6 +245,10 @@ export interface Tasting {
   palate_score: number | null;
   finish_score: number | null;
   overall_score: number | null;
+  /** DB 생성 컬럼: overall_score, 없으면 입력된 N/P/F 반올림 평균 */
+  score: number | null;
+  /** 보틀에서 따른 양(ml) — 저장 시 연결 보틀 잔량에서 차감 */
+  pour_ml: number | null;
   serve: Serve | null;
   nose_intensity: NoseIntensity | null;
   palate_body: PalateBody | null;
@@ -261,6 +266,25 @@ export interface Tasting {
   price_paid: number | null;
   color: string | null;
   photo_url: string | null;
+  flight_id: string | null;
+  /** 플라이트 안의 잔 번호 (1부터) */
+  flight_position: number | null;
+  /** 블라인드 시음 때 적은 추측 */
+  blind_guess: string | null;
+  /** 과거 기록 가져오기의 원점수 (10점 척도 등) */
+  source_score: number | null;
+  created_at: string;
+}
+
+/** 플라이트 — 한 자리에서 여러 잔을 나란히 마신 세션 */
+export interface Flight {
+  id: string;
+  user_id: string;
+  name: string;
+  tasted_at: string;
+  location: string | null;
+  blind: boolean;
+  note: string | null;
   created_at: string;
 }
 
@@ -284,9 +308,11 @@ export interface AromaTag {
 }
 
 export type BottleWithWhisky = Bottle & { whiskies: Whisky };
-export type TastingWithWhisky = Tasting & { whiskies: Whisky };
+/** whiskies!inner로 조회한 시음 (공개 전 블라인드 잔 제외) */
+export type TastingWithWhisky = Tasting & { whisky_id: string; whiskies: Whisky };
 export type TastingFull = Tasting & {
-  whiskies: Whisky;
+  /** 공개 전 블라인드 잔이면 null */
+  whiskies: Whisky | null;
   bottles: Bottle | null;
   tasting_aromas: { stage: AromaStage; aroma_tags: AromaTag }[];
 };

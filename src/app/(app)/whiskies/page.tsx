@@ -28,12 +28,20 @@ export default async function WhiskiesPage({
         eyebrow="Collection"
         title="위스키"
         action={
-          <Link
-            href="/whiskies/new"
-            className="h-10 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
-          >
-            + 등록
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/wishlist"
+              className="h-10 px-4 inline-flex items-center rounded-full border border-hairline text-muted text-sm"
+            >
+              위시리스트
+            </Link>
+            <Link
+              href="/whiskies/new"
+              className="h-10 px-4 inline-flex items-center rounded-full border border-accent text-accent-bright text-sm"
+            >
+              + 등록
+            </Link>
+          </div>
         }
       />
 
@@ -67,7 +75,9 @@ export default async function WhiskiesPage({
 
       {whiskies.length === 0 ? (
         <EmptyState
-          message={q || category ? '조건에 맞는 위스키가 없습니다.' : '아직 등록된 위스키가 없습니다.'}
+          message={
+            q || category ? '조건에 맞는 위스키가 없습니다.' : '아직 등록된 위스키가 없습니다.'
+          }
           ctaHref="/whiskies/new"
           ctaLabel="첫 위스키 등록"
         />

@@ -11,30 +11,41 @@ import {
   scoreTextClass,
   SectionTitle,
 } from '@/components/ui';
+import { formatDuration, predictDepletion, scoreDecline } from '@/lib/bottles';
 import { averageScore, daysSinceOpen, formatDate, formatOpenAge } from '@/lib/format';
 import type { BottleWithWhisky, TastingWithWhisky } from '@/lib/types';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [recentRes, openRes, whiskyCountRes, tastingScoresRes, aromaRes] = await Promise.all([
-    supabase
-      .from('tastings')
-      .select('*, whiskies(*)')
-      .order('tasted_at', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(6),
-    supabase
-      .from('bottles')
-      .select('*, whiskies(*)')
-      .eq('status', 'open')
-      .order('open_date', { ascending: true }),
-    supabase.from('whiskies').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('tastings')
-      .select('nose_score, palate_score, finish_score, overall_score'),
-    supabase.from('tasting_aromas').select('tasting_id, tag_id, aroma_tags(name)'),
-  ]);
+  const [recentRes, openRes, whiskyCountRes, tastingScoresRes, aromaRes, bottleScoresRes] =
+    await Promise.all([
+      supabase
+        .from('tastings')
+        .select('*, whiskies!inner(*)')
+        .order('tasted_at', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(6),
+      supabase
+        .from('bottles')
+        .select('*, whiskies(*)')
+        .eq('status', 'open')
+        .order('open_date', { ascending: true }),
+      supabase.from('whiskies').select('*', { count: 'exact', head: true }),
+      supabase.from('tastings').select('nose_score, palate_score, finish_score, overall_score'),
+      supabase.from('tasting_aromas').select('tasting_id, tag_id, aroma_tags(name)'),
+      // 보틀별 점수 추이 (개봉 후 하락 감지)
+      supabase
+        .from('tastings')
+        .select('bottle_id, score')
+        .not('bottle_id', 'is', null)
+        .not('score', 'is', null)
+        .order('tasted_at', { ascending: true }),
+    ]);
+  const scoresByBottle = new Map<string, { score: number }[]>();
+  for (const row of (bottleScoresRes.data ?? []) as { bottle_id: string; score: number }[]) {
+    scoresByBottle.set(row.bottle_id, [...(scoresByBottle.get(row.bottle_id) ?? []), row]);
+  }
 
   const recent = (recentRes.data ?? []) as TastingWithWhisky[];
   const openBottles = (openRes.data ?? []) as BottleWithWhisky[];
@@ -144,25 +155,46 @@ export default async function DashboardPage() {
             />
           ) : (
             <div className="space-y-3">
-              {openBottles.map((bottle) => (
-                <LinkCard key={bottle.id} href={`/whiskies/${bottle.whisky_id}`}>
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{bottle.whiskies.name}</p>
-                    <p className="text-sm text-muted mt-0.5">
-                      {formatOpenAge(bottle.open_date) ?? '개봉일 미입력'} · 잔량{' '}
-                      {bottle.remaining_pct}%
-                    </p>
-                    {(daysSinceOpen(bottle.open_date) ?? 0) > 180 && bottle.remaining_pct > 0 && (
-                      <p className="text-xs text-accent-bright mt-1">
-                        개봉 6개월 경과 — 산화가 진행됩니다. 마셔주세요
+              {openBottles.map((bottle) => {
+                const depletion = predictDepletion(bottle);
+                const decline = scoreDecline(scoresByBottle.get(bottle.id) ?? []);
+                return (
+                  <LinkCard key={bottle.id} href={`/whiskies/${bottle.whisky_id}`}>
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{bottle.whiskies.name}</p>
+                      <p className="text-sm text-muted mt-0.5">
+                        {formatOpenAge(bottle.open_date) ?? '개봉일 미입력'} · 잔량{' '}
+                        {bottle.remaining_pct}%
                       </p>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <RemainingBar pct={bottle.remaining_pct} />
-                  </div>
-                </LinkCard>
-              ))}
+                      {depletion && (
+                        <p className="text-xs text-faint mt-1">
+                          이 속도(주 {depletion.mlPerWeek}ml)면 {formatDuration(depletion.daysLeft)}{' '}
+                          뒤 소진 · {formatDate(depletion.date)}
+                        </p>
+                      )}
+                      {decline != null ? (
+                        <p className="text-xs text-accent-bright mt-1">
+                          개봉 후 점수가 {decline}점 떨어졌어요 — 산화가 맛에 드러나고 있습니다
+                        </p>
+                      ) : depletion?.slow ? (
+                        <p className="text-xs text-accent-bright mt-1">
+                          이 속도면 개봉 1년을 넘겨요 — 산화 전에 더 자주 마셔주세요
+                        </p>
+                      ) : (
+                        (daysSinceOpen(bottle.open_date) ?? 0) > 180 &&
+                        bottle.remaining_pct > 0 && (
+                          <p className="text-xs text-accent-bright mt-1">
+                            개봉 6개월 경과 — 산화가 진행됩니다. 마셔주세요
+                          </p>
+                        )
+                      )}
+                    </div>
+                    <div className="mt-3">
+                      <RemainingBar pct={bottle.remaining_pct} />
+                    </div>
+                  </LinkCard>
+                );
+              })}
             </div>
           )}
         </section>

@@ -12,6 +12,7 @@ import {
   SectionTitle,
 } from '@/components/ui';
 import { OpenAgeChart, Sparkline } from '@/components/charts';
+import { priceSummary } from '@/lib/bottles';
 import {
   averageScore,
   daysSinceOpen,
@@ -23,16 +24,13 @@ import {
 import { BOTTLE_STATUS_LABELS, type Bottle, type Tasting, type Whisky } from '@/lib/types';
 import { ConfirmForm } from '@/components/confirm-form';
 import { deleteWhisky } from '../actions';
+import { addWishlistFromWhisky } from '../../wishlist/actions';
 
-export default async function WhiskyDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function WhiskyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [whiskyRes, bottlesRes, tastingsRes] = await Promise.all([
+  const [whiskyRes, bottlesRes, tastingsRes, wishRes] = await Promise.all([
     supabase.from('whiskies').select('*').eq('id', id).maybeSingle(),
     supabase
       .from('bottles')
@@ -44,6 +42,7 @@ export default async function WhiskyDetailPage({
       .select('*')
       .eq('whisky_id', id)
       .order('tasted_at', { ascending: false }),
+    supabase.from('wishlist').select('id').eq('whisky_id', id).maybeSingle(),
   ]);
 
   const whisky = whiskyRes.data as Whisky | null;
@@ -51,6 +50,7 @@ export default async function WhiskyDetailPage({
   const bottles = (bottlesRes.data ?? []) as Bottle[];
   const tastings = (tastingsRes.data ?? []) as Tasting[];
 
+  const prices = priceSummary(bottles);
   const scoreOf = (t: Tasting) =>
     t.overall_score ?? averageScore(t.nose_score, t.palate_score, t.finish_score);
   const scores = tastings.map(scoreOf).filter((s): s is number => s != null);
@@ -140,10 +140,41 @@ export default async function WhiskyDetailPage({
         >
           수정
         </Link>
+        {wishRes.data ? (
+          <Link
+            href="/wishlist"
+            className="h-10 px-5 inline-flex items-center rounded-full border border-accent/40 text-accent-bright text-sm"
+          >
+            위시리스트에 있음
+          </Link>
+        ) : (
+          <form action={addWishlistFromWhisky}>
+            <input type="hidden" name="whisky_id" value={whisky.id} />
+            <button
+              type="submit"
+              className="h-10 px-5 inline-flex items-center rounded-full border border-hairline text-muted text-sm"
+            >
+              + 위시리스트
+            </button>
+          </form>
+        )}
       </div>
 
       <section>
         <SectionTitle>보틀 {bottles.length > 0 && `(${bottles.length})`}</SectionTitle>
+        {prices && prices.count > 1 && (
+          <p className="text-sm text-muted -mt-2 mb-4">
+            구매가 최저 {formatKrw(prices.min)} · 최고 {formatKrw(prices.max)} · 최근{' '}
+            {formatKrw(prices.last.purchase_price)}
+            {prices.change != null && prices.change !== 0 && (
+              <span className={prices.change > 0 ? 'text-danger' : 'text-accent-bright'}>
+                {' '}
+                (직전보다 {prices.change > 0 ? '+' : '−'}
+                {formatKrw(Math.abs(prices.change))})
+              </span>
+            )}
+          </p>
+        )}
         {bottles.length === 0 ? (
           <p className="text-muted text-sm">구매 기록이 없습니다.</p>
         ) : (
@@ -220,7 +251,10 @@ export default async function WhiskyDetailPage({
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">{formatDate(tasting.tasted_at)}</p>
                     <p className="text-sm text-muted mt-0.5 truncate">
-                      {tasting.comment || tastingDescriptors(tasting) || tasting.palate_note || '노트 없음'}
+                      {tasting.comment ||
+                        tastingDescriptors(tasting) ||
+                        tasting.palate_note ||
+                        '노트 없음'}
                     </p>
                   </div>
                   <ScoreFigure value={score} />

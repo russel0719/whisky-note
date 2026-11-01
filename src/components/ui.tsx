@@ -11,9 +11,7 @@ export function scoreTextClass(score: number | null | undefined): string {
 }
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-accent text-[13px] tracking-[0.25em] uppercase mb-2">{children}</p>
-  );
+  return <p className="text-accent text-[13px] tracking-[0.25em] uppercase mb-2">{children}</p>;
 }
 
 export function PageHeader({
@@ -114,7 +112,12 @@ export function GlencairnArt({ className = '' }: { className?: string }) {
       <path d="M16 6c0 9 2.4 13.4 4.6 16.4 1.2 1.6 1.6 3 1.6 5.2h3.6c0-2.2.4-3.6 1.6-5.2C29.6 19.4 32 15 32 6H16Z" />
       <path d="M22.8 27.6v3.6M25.2 27.6v3.6" />
       <path d="M17 34.8h14" opacity="0.7" />
-      <path d="M19 12.5c1 4.5 2.5 7 4 9" className="text-accent" stroke="currentColor" opacity="0.55" />
+      <path
+        d="M19 12.5c1 4.5 2.5 7 4 9"
+        className="text-accent"
+        stroke="currentColor"
+        opacity="0.55"
+      />
     </svg>
   );
 }
@@ -128,13 +131,7 @@ export function CategoryBadge({ category }: { category: Category }) {
 }
 
 /** 리스트 카드 우측의 점수 — 세리프 + 점수 밴드 */
-export function ScoreFigure({
-  value,
-  size = 'md',
-}: {
-  value: number | null;
-  size?: 'md' | 'lg';
-}) {
+export function ScoreFigure({ value, size = 'md' }: { value: number | null; size?: 'md' | 'lg' }) {
   return (
     <p
       className={`font-display tabular-nums shrink-0 ${
@@ -170,15 +167,38 @@ export function SkeletonList({ rows = 4 }: { rows?: number }) {
       </div>
       <div className="space-y-3">
         {Array.from({ length: rows }).map((_, i) => (
-          <div
-            key={i}
-            className="bg-tile-1 border border-hairline rounded-(--radius-card) p-5"
-          >
+          <div key={i} className="bg-tile-1 border border-hairline rounded-(--radius-card) p-5">
             <div className="skeleton h-5 w-2/5 mb-3" />
             <div className="skeleton h-4 w-3/5" />
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+/** 라벨 · 평균 점수 막대 · 횟수 행 목록 */
+export function ScoreBars({ rows }: { rows: { label: string; avg: number; count: number }[] }) {
+  return (
+    <Card className="space-y-3">
+      {rows.map(({ label, avg, count }) => (
+        <div key={label} className="flex items-center gap-3">
+          <span className="text-sm text-muted w-24 shrink-0 truncate" title={label}>
+            {label}
+          </span>
+          <div className="flex-1 h-2 rounded-full bg-tile-2 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-accent"
+              style={{ width: `${avg}%` }}
+              title={`${label}: 평균 ${avg}점 (${count}회)`}
+            />
+          </div>
+          <span className={`text-sm tabular-nums w-8 text-right ${scoreTextClass(avg)}`}>
+            {avg}
+          </span>
+          <span className="text-xs text-faint tabular-nums w-8 text-right">{count}회</span>
+        </div>
+      ))}
+    </Card>
   );
 }

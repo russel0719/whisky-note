@@ -1,9 +1,14 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
+import { priceSummary, type PricePoint } from '@/lib/bottles';
+import { formatDate, formatKrw } from '@/lib/format';
 import { createBottle, updateBottle, type FormState } from '../actions';
 import { Field, inputClass, SubmitButton } from '@/components/form';
+import { WhiskyPicker, type PickerWhisky } from '@/components/whisky-picker';
 import type { Bottle } from '@/lib/types';
+
+export type PriceHistory = (PricePoint & { id: string; whisky_id: string })[];
 
 function today(): string {
   const d = new Date();
@@ -16,39 +21,43 @@ export function BottleForm({
   whiskies,
   defaultWhiskyId,
   initial,
+  priceHistory = [],
 }: {
-  whiskies: { id: string; name: string }[];
+  whiskies: PickerWhisky[];
   defaultWhiskyId?: string;
   initial?: Bottle;
+  /** 위스키별 지난 구매 — 구매가 입력 시 비교 */
+  priceHistory?: PriceHistory;
 }) {
   const isEdit = initial != null;
   const [state, action, pending] = useActionState<FormState, FormData>(
     isEdit ? updateBottle : createBottle,
     {}
   );
+  const [whiskyId, setWhiskyId] = useState(initial?.whisky_id ?? defaultWhiskyId ?? '');
+  const [price, setPrice] = useState(
+    initial?.purchase_price != null ? String(initial.purchase_price) : ''
+  );
+  const history = priceSummary(
+    priceHistory.filter((p) => p.whisky_id === whiskyId && p.id !== initial?.id)
+  );
+  const diff = history && price ? Number(price) - history.last.purchase_price : null;
 
   return (
     <form action={action} className="space-y-4">
       {isEdit && <input type="hidden" name="id" value={initial.id} />}
 
-      <Field label="위스키" htmlFor="whisky_id" required>
-        <select
-          id="whisky_id"
-          name="whisky_id"
-          required
-          defaultValue={initial?.whisky_id ?? defaultWhiskyId ?? ''}
-          className={inputClass}
-        >
-          <option value="" disabled>
-            선택
-          </option>
-          {whiskies.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <div>
+        <p className="text-sm text-muted mb-1.5">
+          위스키 <span className="text-accent">*</span>
+        </p>
+        <WhiskyPicker
+          whiskies={whiskies}
+          defaultWhiskyId={initial?.whisky_id ?? defaultWhiskyId}
+          allowCreate={!isEdit}
+          onChange={(id) => setWhiskyId(id ?? '')}
+        />
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="구매일" htmlFor="purchase_date" required>
@@ -68,12 +77,28 @@ export function BottleForm({
             type="number"
             min="0"
             step="100"
-            defaultValue={initial?.purchase_price ?? ''}
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
             className={inputClass}
-            placeholder="120000"
+            placeholder={history ? String(history.last.purchase_price) : '120000'}
           />
         </Field>
       </div>
+
+      {history && (
+        <p className="text-xs text-faint -mt-1">
+          지난 구매 {formatDate(history.last.purchase_date)}
+          {history.last.purchase_place ? ` · ${history.last.purchase_place}` : ''} ·{' '}
+          {formatKrw(history.last.purchase_price)}
+          {history.count > 1 && ` (최저 ${formatKrw(history.min)})`}
+          {diff != null && diff !== 0 && (
+            <span className={diff > 0 ? 'text-danger' : 'text-accent-bright'}>
+              {' '}
+              — 지난번보다 {formatKrw(Math.abs(diff))} {diff > 0 ? '비쌈' : '저렴'}
+            </span>
+          )}
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="구매처" htmlFor="purchase_place">
@@ -97,10 +122,7 @@ export function BottleForm({
         </Field>
       </div>
 
-      <Field
-        label={isEdit ? '개봉일' : '개봉일 (이미 개봉했다면)'}
-        htmlFor="open_date"
-      >
+      <Field label={isEdit ? '개봉일' : '개봉일 (이미 개봉했다면)'} htmlFor="open_date">
         <input
           id="open_date"
           name="open_date"
