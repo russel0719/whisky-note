@@ -12,8 +12,16 @@ import {
   SectionTitle,
 } from '@/components/ui';
 import { OpenAgeChart, Sparkline } from '@/components/charts';
-import { averageScore, daysSinceOpen, formatDate, formatKrw, formatOpenAge } from '@/lib/format';
+import {
+  averageScore,
+  daysSinceOpen,
+  formatDate,
+  formatKrw,
+  formatOpenAge,
+  tastingDescriptors,
+} from '@/lib/format';
 import { BOTTLE_STATUS_LABELS, type Bottle, type Tasting, type Whisky } from '@/lib/types';
+import { ConfirmForm } from '@/components/confirm-form';
 import { deleteWhisky } from '../actions';
 
 export default async function WhiskyDetailPage({
@@ -212,7 +220,7 @@ export default async function WhiskyDetailPage({
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">{formatDate(tasting.tasted_at)}</p>
                     <p className="text-sm text-muted mt-0.5 truncate">
-                      {tasting.comment || tasting.palate_note || '노트 없음'}
+                      {tasting.comment || tastingDescriptors(tasting) || tasting.palate_note || '노트 없음'}
                     </p>
                   </div>
                   <ScoreFigure value={score} />
@@ -223,15 +231,16 @@ export default async function WhiskyDetailPage({
         )}
       </section>
 
-      <form
+      <ConfirmForm
         action={deleteWhisky}
+        message={`'${whisky.name}'와 보틀 ${bottles.length}개, 시음 노트 ${tastings.length}개를 모두 삭제할까요? 되돌릴 수 없습니다.`}
         className="pt-4 border-t border-hairline-soft"
       >
         <input type="hidden" name="id" value={whisky.id} />
         <button type="submit" className="text-danger text-sm">
           이 위스키와 모든 기록 삭제
         </button>
-      </form>
+      </ConfirmForm>
     </div>
   );
 }

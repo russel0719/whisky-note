@@ -20,6 +20,8 @@ cp .env.example .env.local  # NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_AN
 npm run dev
 ```
 
+테스트는 `npm test` (vitest). CI는 lint → test → build 순으로 돌린다.
+
 선택 환경변수:
 
 - `ALLOWED_EMAILS` — 쉼표로 구분한 허용 이메일 목록. 설정하면 목록 밖 이메일은

@@ -8,6 +8,7 @@ import {
   updateOpenDate,
   updateRemaining,
 } from './actions';
+import { ConfirmForm } from '@/components/confirm-form';
 import type { Bottle } from '@/lib/types';
 
 function today(): string {
@@ -109,16 +110,11 @@ export function BottleControls({ bottle }: { bottle: Bottle }) {
 
 function DeleteButton({ id }: { id: string }) {
   return (
-    <form
-      action={deleteBottle}
-      onSubmit={(e) => {
-        if (!confirm('이 보틀 기록을 삭제할까요?')) e.preventDefault();
-      }}
-    >
+    <ConfirmForm action={deleteBottle} message="이 보틀 기록을 삭제할까요?">
       <input type="hidden" name="id" value={id} />
       <button type="submit" className="text-danger text-sm">
         삭제
       </button>
-    </form>
+    </ConfirmForm>
   );
 }

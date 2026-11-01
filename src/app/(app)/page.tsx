@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     supabase
       .from('tastings')
       .select('nose_score, palate_score, finish_score, overall_score'),
-    supabase.from('tasting_aromas').select('aroma_tags(name)'),
+    supabase.from('tasting_aromas').select('tasting_id, tag_id, aroma_tags(name)'),
   ]);
 
   const recent = (recentRes.data ?? []) as TastingWithWhisky[];
@@ -55,10 +55,19 @@ export default async function DashboardPage() {
       ? Math.round(perTasting.reduce((a, b) => a + b, 0) / perTasting.length)
       : null;
 
+  // 같은 노트에서 여러 단계에 고른 태그는 한 번만 센다
   const aromaCounts = new Map<string, number>();
-  for (const row of (aromaRes.data ?? []) as unknown as { aroma_tags: { name: string } | null }[]) {
+  const seenAroma = new Set<string>();
+  for (const row of (aromaRes.data ?? []) as unknown as {
+    tasting_id: string;
+    tag_id: number;
+    aroma_tags: { name: string } | null;
+  }[]) {
     const name = row.aroma_tags?.name;
-    if (name) aromaCounts.set(name, (aromaCounts.get(name) ?? 0) + 1);
+    const key = `${row.tasting_id}:${row.tag_id}`;
+    if (!name || seenAroma.has(key)) continue;
+    seenAroma.add(key);
+    aromaCounts.set(name, (aromaCounts.get(name) ?? 0) + 1);
   }
   const topAromas = [...aromaCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
 

@@ -5,11 +5,14 @@
 --   supabase db push
 --
 -- 현재 테이블 개요 (whisky_note 스키마):
---   whiskies        위스키 마스터 (이름/증류소/분류/지역/도수/숙성/캐스크)
+--   whiskies        위스키 마스터 (이름/증류소/분류/지역/도수/숙성/캐스크, catalog_id)
 --   bottles         구매 기록 (구매일/가격/용량/개봉일/잔량/상태)
 --   tastings        시음 노트 (N/P/F/총점 100점제, 노트, 장소, 페어링, 재구매 의사)
 --   aroma_tags      아로마 휠 태그 마스터 (공용, 읽기 전용)
 --   tasting_aromas  시음 ↔ 아로마 태그 M:N
+--   catalog         글로벌 위스키 카탈로그 (공용, 읽기 전용)
+--
+-- 함수: ensure_whisky_from_catalog(catalog_id), save_tasting(tasting jsonb, tag_ids, id)
 --
 -- 적용 후 수동 단계: Supabase 대시보드 > Settings > API > Exposed schemas 에
 -- whisky_note 를 추가해야 PostgREST로 접근 가능하다.

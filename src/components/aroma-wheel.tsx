@@ -46,14 +46,23 @@ function radialRotation(mid: number): number {
   return mid < 180 ? mid - 90 : mid + 90;
 }
 
+/**
+ * 아로마 휠 태그 선택. collapsible이면 선택 칩 + 열기 버튼만 보이고, 휠은 펼쳤을 때만 표시한다
+ * (접혀 있어도 체크박스는 마운트되어 있어 선택값이 폼에 제출된다).
+ */
 export function AromaWheelPicker({
   aromaTags,
+  name = 'aroma_tags',
   defaultSelected = [],
+  collapsible = false,
 }: {
   aromaTags: AromaTag[];
+  name?: string;
   defaultSelected?: number[];
+  collapsible?: boolean;
 }) {
   const [selected, setSelected] = useState<Set<number>>(new Set(defaultSelected));
+  const [open, setOpen] = useState(!collapsible);
 
   const groups = useMemo(
     () =>
@@ -94,7 +103,7 @@ export function AromaWheelPicker({
           <label key={tag.id}>
             <input
               type="checkbox"
-              name="aroma_tags"
+              name={name}
               value={tag.id}
               checked={selected.has(tag.id)}
               onChange={() => toggle(tag.id)}
@@ -106,7 +115,7 @@ export function AromaWheelPicker({
 
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="w-full max-w-[440px] mx-auto block select-none"
+        className={`w-full max-w-[440px] mx-auto select-none ${open ? 'block' : 'hidden'}`}
         aria-hidden
       >
         {segments.map(({ grp, tags, start, end }) => {
@@ -203,8 +212,8 @@ export function AromaWheelPicker({
         </text>
       </svg>
 
-      {selectedTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-4">
+      {(selectedTags.length > 0 || collapsible) && (
+        <div className={`flex flex-wrap gap-2 ${open ? 'mt-4' : ''}`}>
           {selectedTags.map((tag) => (
             <button
               key={tag.id}
@@ -216,6 +225,16 @@ export function AromaWheelPicker({
               <span aria-hidden className="text-faint">×</span>
             </button>
           ))}
+          {collapsible && (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              className="inline-flex items-center h-8 px-3 rounded-full border border-dashed border-hairline text-sm text-muted"
+            >
+              {open ? '휠 접기' : selectedTags.length > 0 ? '+ 태그' : '+ 아로마 태그 고르기'}
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -5,19 +5,48 @@ import { ScoreDial } from '@/components/charts';
 import { Card, CategoryBadge, Eyebrow, scoreTextClass } from '@/components/ui';
 import { ColorDot } from '@/components/color-swatch';
 import { averageScore, formatDate, formatKrw, formatOpenAge } from '@/lib/format';
-import { BUY_AGAIN_LABELS, type TastingFull } from '@/lib/types';
+import {
+  BUY_AGAIN_LABELS,
+  FINISH_CHARACTERS,
+  FINISH_LENGTHS,
+  NOSE_INTENSITIES,
+  PALATE_BODIES,
+  PALATE_SWEETNESS,
+  PALATE_TEXTURES,
+  SERVES,
+  type AromaStage,
+  type AromaTag,
+  type TastingFull,
+} from '@/lib/types';
+import { ConfirmForm } from '@/components/confirm-form';
 import { deleteTasting } from '../actions';
+
+function Chip({ children, accent }: { children: React.ReactNode; accent?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center h-8 px-3 rounded-full border text-sm ${
+        accent ? 'border-accent/40 text-accent-bright' : 'border-hairline text-muted'
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
 
 function NoteBlock({
   label,
   score,
+  descriptors,
+  aromas,
   note,
 }: {
   label: string;
   score: number | null;
+  descriptors: string[];
+  aromas: AromaTag[];
   note: string | null;
 }) {
-  if (score == null && !note) return null;
+  if (score == null && descriptors.length === 0 && aromas.length === 0 && !note) return null;
   return (
     <Card>
       <div className="flex items-center justify-between">
@@ -28,7 +57,19 @@ function NoteBlock({
           </p>
         )}
       </div>
-      {note && <p className="mt-2 leading-relaxed break-words">{note}</p>}
+      {(descriptors.length > 0 || aromas.length > 0) && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {descriptors.map((d) => (
+            <Chip key={d}>{d}</Chip>
+          ))}
+          {aromas.map((tag) => (
+            <Chip key={tag.id} accent>
+              {tag.name}
+            </Chip>
+          ))}
+        </div>
+      )}
+      {note && <p className="mt-3 leading-relaxed break-words text-muted">{note}</p>}
     </Card>
   );
 }
@@ -42,7 +83,7 @@ export default async function TastingDetailPage({
   const supabase = await createClient();
   const { data } = await supabase
     .from('tastings')
-    .select('*, whiskies(*), bottles(*), tasting_aromas(aroma_tags(*))')
+    .select('*, whiskies(*), bottles(*), tasting_aromas(stage, aroma_tags(*))')
     .eq('id', id)
     .maybeSingle();
 
@@ -55,7 +96,12 @@ export default async function TastingDetailPage({
   const openAge = tasting.bottles
     ? formatOpenAge(tasting.bottles.open_date, tasting.tasted_at)
     : null;
-  const aromas = tasting.tasting_aromas.map((row) => row.aroma_tags).filter(Boolean);
+  const aromasOf = (stage: AromaStage) =>
+    tasting.tasting_aromas
+      .filter((row) => row.stage === stage)
+      .map((row) => row.aroma_tags)
+      .filter(Boolean);
+  const aromas = aromasOf('overall');
 
   return (
     <div className="space-y-8">
@@ -75,6 +121,7 @@ export default async function TastingDetailPage({
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-3 text-sm text-muted">
           <CategoryBadge category={tasting.whiskies.category} />
+          {tasting.serve && <span>{SERVES[tasting.serve]}</span>}
           {tasting.location && <span>{tasting.location}</span>}
           {openAge ? (
             <span className="text-accent-bright">{openAge}에 시음</span>
@@ -96,14 +143,43 @@ export default async function TastingDetailPage({
       )}
 
       <section className="space-y-3">
-        <NoteBlock label="Nose" score={tasting.nose_score} note={tasting.nose_note} />
-        <NoteBlock label="Palate" score={tasting.palate_score} note={tasting.palate_note} />
-        <NoteBlock label="Finish" score={tasting.finish_score} note={tasting.finish_note} />
+        <NoteBlock
+          label="Nose"
+          score={tasting.nose_score}
+          descriptors={
+            tasting.nose_intensity ? [`강도 ${NOSE_INTENSITIES[tasting.nose_intensity]}`] : []
+          }
+          aromas={aromasOf('nose')}
+          note={tasting.nose_note}
+        />
+        <NoteBlock
+          label="Palate"
+          score={tasting.palate_score}
+          descriptors={[
+            ...(tasting.palate_body ? [`${PALATE_BODIES[tasting.palate_body]} 바디`] : []),
+            ...(tasting.palate_sweetness
+              ? [`맛 ${PALATE_SWEETNESS[tasting.palate_sweetness]}`]
+              : []),
+            ...tasting.palate_texture.map((k) => PALATE_TEXTURES[k]),
+          ]}
+          aromas={aromasOf('palate')}
+          note={tasting.palate_note}
+        />
+        <NoteBlock
+          label="Finish"
+          score={tasting.finish_score}
+          descriptors={[
+            ...(tasting.finish_length ? [`여운 ${FINISH_LENGTHS[tasting.finish_length]}`] : []),
+            ...tasting.finish_character.map((k) => FINISH_CHARACTERS[k]),
+          ]}
+          aromas={aromasOf('finish')}
+          note={tasting.finish_note}
+        />
       </section>
 
       {aromas.length > 0 && (
         <section>
-          <p className="text-sm text-faint mb-3">아로마</p>
+          <p className="text-sm text-faint mb-3">아로마 (단계 미지정)</p>
           <div className="flex flex-wrap gap-2">
             {aromas.map((tag) => (
               <span
@@ -155,12 +231,12 @@ export default async function TastingDetailPage({
             이 위스키 다시 기록
           </Link>
         </div>
-        <form action={deleteTasting}>
+        <ConfirmForm action={deleteTasting} message="이 시음 노트를 삭제할까요?">
           <input type="hidden" name="id" value={tasting.id} />
           <button type="submit" className="text-danger text-sm">
             삭제
           </button>
-        </form>
+        </ConfirmForm>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { EmptyState, LinkCard, PageHeader, ScoreFigure } from '@/components/ui';
 import { inputClass } from '@/components/form';
-import { averageScore, formatDate } from '@/lib/format';
+import { averageScore, formatDate, tastingDescriptors } from '@/lib/format';
 import {
   AROMA_GROUPS,
   AROMA_GROUP_LABELS,
@@ -231,7 +231,10 @@ export default async function TastingsPage({
                 <p className="text-sm text-muted mt-0.5 truncate">
                   {formatDate(tasting.tasted_at)}
                   {tasting.location ? ` · ${tasting.location}` : ''}
-                  {tasting.comment ? ` · ${tasting.comment}` : ''}
+                  {(() => {
+                    const summary = tasting.comment ?? tastingDescriptors(tasting);
+                    return summary ? ` · ${summary}` : '';
+                  })()}
                 </p>
               </div>
               <ScoreFigure value={scoreOf(tasting)} />

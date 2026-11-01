@@ -17,7 +17,7 @@ export default async function EditTastingPage({
   const [tastingRes, whiskiesRes, bottlesRes, tagsRes] = await Promise.all([
     supabase
       .from('tastings')
-      .select('*, whiskies(*), bottles(*), tasting_aromas(aroma_tags(*))')
+      .select('*, whiskies(*), bottles(*), tasting_aromas(stage, aroma_tags(*))')
       .eq('id', id)
       .maybeSingle(),
     supabase.from('whiskies').select('id, name').order('name'),

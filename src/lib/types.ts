@@ -41,6 +41,77 @@ export const BUY_AGAIN_LABELS = {
 } as const;
 export type BuyAgain = keyof typeof BUY_AGAIN_LABELS;
 
+// 선택형 시음 노트 — 키 목록은 supabase/migrations/20261101130000_structured_tasting_notes.sql의
+// CHECK 제약과 동기 유지 (키를 추가하면 새 마이그레이션으로 제약도 바꿔야 한다)
+/** 마신 방식 — 같은 위스키도 방식에 따라 맛이 달라 점수 비교의 기준이 된다 */
+export const SERVES = {
+  neat: '니트',
+  water: '가수',
+  rocks: '온더록',
+  highball: '하이볼',
+} as const;
+export type Serve = keyof typeof SERVES;
+
+export const NOSE_INTENSITIES = {
+  light: '은은함',
+  medium: '보통',
+  strong: '강렬함',
+} as const;
+export type NoseIntensity = keyof typeof NOSE_INTENSITIES;
+
+export const PALATE_BODIES = {
+  light: '라이트',
+  medium: '미디엄',
+  full: '풀',
+} as const;
+export type PalateBody = keyof typeof PALATE_BODIES;
+
+export const PALATE_SWEETNESS = {
+  dry: '드라이',
+  balanced: '밸런스',
+  sweet: '스위트',
+} as const;
+export type PalateSweetness = keyof typeof PALATE_SWEETNESS;
+
+export const PALATE_TEXTURES = {
+  oily: '오일리',
+  creamy: '크리미',
+  silky: '실키',
+  waxy: '왁시',
+  watery: '워터리',
+  hot: '알코올감',
+} as const;
+export type PalateTexture = keyof typeof PALATE_TEXTURES;
+
+export const FINISH_LENGTHS = {
+  short: '짧음',
+  medium: '보통',
+  long: '긺',
+} as const;
+export type FinishLength = keyof typeof FINISH_LENGTHS;
+
+export const FINISH_CHARACTERS = {
+  dry: '드라이',
+  warm: '따뜻함',
+  clean: '깔끔함',
+  sweet: '달콤함',
+  bitter: '쌉쌀함',
+  tannic: '떫음',
+  tingling: '찌릿함',
+} as const;
+export type FinishCharacter = keyof typeof FINISH_CHARACTERS;
+
+/** 아로마 태그를 느낀 단계. overall은 단계 구분 이전에 기록된 태그 */
+export const TASTING_STAGES = ['nose', 'palate', 'finish'] as const;
+export type TastingStage = (typeof TASTING_STAGES)[number];
+export type AromaStage = TastingStage | 'overall';
+
+export const STAGE_LABELS: Record<TastingStage, string> = {
+  nose: 'Nose (향)',
+  palate: 'Palate (맛)',
+  finish: 'Finish (여운)',
+};
+
 export const AROMA_GROUPS = [
   'fruit',
   'floral',
@@ -144,6 +215,7 @@ export interface Whisky {
   age_years: number | null;
   cask_type: string | null;
   image_url: string | null;
+  catalog_id: string | null;
   created_at: string;
 }
 
@@ -172,6 +244,14 @@ export interface Tasting {
   palate_score: number | null;
   finish_score: number | null;
   overall_score: number | null;
+  serve: Serve | null;
+  nose_intensity: NoseIntensity | null;
+  palate_body: PalateBody | null;
+  palate_sweetness: PalateSweetness | null;
+  palate_texture: PalateTexture[];
+  finish_length: FinishLength | null;
+  finish_character: FinishCharacter[];
+  /** 서술형 단계 노트 — 선택형 도입 전 기록. 새 노트에서는 입력받지 않는다 */
   nose_note: string | null;
   palate_note: string | null;
   finish_note: string | null;
@@ -208,5 +288,5 @@ export type TastingWithWhisky = Tasting & { whiskies: Whisky };
 export type TastingFull = Tasting & {
   whiskies: Whisky;
   bottles: Bottle | null;
-  tasting_aromas: { aroma_tags: AromaTag }[];
+  tasting_aromas: { stage: AromaStage; aroma_tags: AromaTag }[];
 };

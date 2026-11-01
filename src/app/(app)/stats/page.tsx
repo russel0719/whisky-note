@@ -38,12 +38,16 @@ export default async function StatsPage() {
         'id, bottle_id, tasted_at, price_paid, nose_score, palate_score, finish_score, overall_score, whiskies(name, category)'
       ),
     supabase.from('bottles').select('*'),
-    supabase.from('tasting_aromas').select('aroma_tags(grp)'),
+    supabase.from('tasting_aromas').select('tasting_id, tag_id, aroma_tags(grp)'),
   ]);
 
   const tastings = (tastingsRes.data ?? []) as unknown as TastingRow[];
   const bottles = (bottlesRes.data ?? []) as Bottle[];
-  const aromaRows = (aromaRes.data ?? []) as unknown as { aroma_tags: { grp: AromaGroup } | null }[];
+  const aromaRows = (aromaRes.data ?? []) as unknown as {
+    tasting_id: string;
+    tag_id: number;
+    aroma_tags: { grp: AromaGroup } | null;
+  }[];
 
   if (tastings.length === 0 && bottles.length === 0) {
     return (
@@ -62,10 +66,15 @@ export default async function StatsPage() {
     t.overall_score ?? averageScore(t.nose_score, t.palate_score, t.finish_score);
 
   // 아로마 프로필 (9그룹)
+  // 같은 노트에서 여러 단계에 고른 태그는 한 번만 센다
   const groupCounts = new Map<AromaGroup, number>();
+  const seenAroma = new Set<string>();
   for (const row of aromaRows) {
     const grp = row.aroma_tags?.grp;
-    if (grp) groupCounts.set(grp, (groupCounts.get(grp) ?? 0) + 1);
+    const key = `${row.tasting_id}:${row.tag_id}`;
+    if (!grp || seenAroma.has(key)) continue;
+    seenAroma.add(key);
+    groupCounts.set(grp, (groupCounts.get(grp) ?? 0) + 1);
   }
   const radarData = (Object.keys(AROMA_GROUP_LABELS) as AromaGroup[]).map((grp) => ({
     label: AROMA_GROUP_LABELS[grp],
